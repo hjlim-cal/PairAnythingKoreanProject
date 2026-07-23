@@ -539,12 +539,11 @@ def get_image_base64(image_path):
 # Custom Dialog Modal with Guaranteed Pink Warning Box (#EFB0DC)
 @st.dialog(" ")
 def show_email_modal():
-    """Renders the custom-styled email modal dialog with full container background enforcement."""
+    """Renders the custom-styled email modal dialog with high-contrast burgundy text."""
     
-    # Absolute CSS Override for Modal Shell & All Sub-elements
     st.markdown("""
         <style>
-        /* 1. Target Modal Overlay & Outer Dialog Window */
+        /* 1. Modal Dialog Container Background */
         div[role="dialog"],
         div[role="dialog"] > div,
         div[role="dialog"] > div > div,
@@ -554,23 +553,28 @@ def show_email_modal():
             background-color: #EDEDED !important;
             background: #EDEDED !important;
             border-radius: 16px !important;
-            border: none !important;
         }
 
-        /* 2. Remove Padding Artifacts & Force Inner Light Style */
-        div[role="dialog"] [data-testid="stVerticalBlock"] {
-            background-color: #EDEDED !important;
+        /* 2. Force All Text Inside Modal to Dark Burgundy */
+        div[role="dialog"] p, 
+        div[role="dialog"] span, 
+        div[role="dialog"] div,
+        div[role="dialog"] label,
+        div[role="dialog"] h1,
+        div[role="dialog"] h2,
+        div[role="dialog"] h3 {
+            color: #4E1A3E !important;
         }
 
-        /* 3. Input Widget Styling (Force White BG & Dark Text) */
+        /* 3. Input Widget Styling - Force White BG & Dark Burgundy Text */
         div[role="dialog"] div[data-baseweb="input"],
         div[role="dialog"] div[data-baseweb="base-input"],
         div[role="dialog"] input {
             background-color: #FFFFFF !important;
-            color: #111111 !important;
+            color: #4E1A3E !important;
             border: 1px solid #CCCCCC !important;
             border-radius: 8px !important;
-            -webkit-text-fill-color: #111111 !important;
+            -webkit-text-fill-color: #4E1A3E !important;
         }
 
         /* 4. Placeholder Text Color */
@@ -580,40 +584,17 @@ def show_email_modal():
             opacity: 1 !important;
         }
 
-        /* 5. Close Button (X) Styling */
-        div[role="dialog"] button[aria-label="Close"],
-        div[role="dialog"] button[aria-label="Close"] * {
+        /* 5. Close Button (X) Icon Color */
+        div[role="dialog"] button[aria-label="Close"] svg,
+        div[role="dialog"] button[aria-label="Close"] span,
+        div[role="dialog"] button[aria-label="Close"] {
             color: #4E1A3E !important;
             fill: #4E1A3E !important;
-        }
-
-        /* 6. Footer & Text Colors inside Modal */
-        div[role="dialog"] p, 
-        div[role="dialog"] span, 
-        div[role="dialog"] div {
-            color: #4E1A3E !important;
-        }
-
-        /* 7. Alert Box Styling */
-        .custom-pink-alert {
-            background-color: #EFB0DC !important;
-            color: #4E1A3E !important;
-            padding: 10px 14px !important;
-            border-radius: 8px !important;
-            font-size: 0.9rem !important;
-            font-weight: 600 !important;
-            margin-top: 10px !important;
-            margin-bottom: 10px !important;
-            text-align: left !important;
-            display: flex !important;
-            align-items: center !important;
-            gap: 8px !important;
-            border: 1px solid #D88CB8 !important;
         }
         </style>
     """, unsafe_allow_html=True)
 
-    # Render Modal Title & Subtitle
+    # Render Modal Title & Subtitle with Inline Burgundy Color
     st.markdown("""
         <div style="text-align: center; padding-top: 0px;">
             <div style="font-family: 'Playfair Display', Georgia, serif; font-size: 2.2rem; font-weight: bold; color: #4E1A3E !important; line-height: 1.1; margin-bottom: 1.2rem;">
@@ -655,19 +636,19 @@ def show_email_modal():
     # Display Custom Pink Alert Box if Validation Fails
     if st.session_state.get('email_error', False):
         st.markdown("""
-            <div class="custom-pink-alert">
+            <div style="background-color: #EFB0DC; color: #4E1A3E; padding: 10px 14px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; margin-top: 10px; margin-bottom: 10px; text-align: left; display: flex; align-items: center; gap: 8px; border: 1px solid #D88CB8;">
                 <span>⚠️</span>
                 <span>Please enter your email address.</span>
             </div>
         """, unsafe_allow_html=True)
             
-    # Privacy Footer (Color explicitly forced)
+    # Privacy Footer
     st.markdown("""
-        <div style="text-align: center; margin-top: 15px; font-size: 0.8rem; color: #666666 !important;">
+        <div style="text-align: center; margin-top: 15px; font-size: 0.8rem; color: #6B3254 !important;">
             🔒 We respect your privacy.
         </div>
     """, unsafe_allow_html=True)
-    
+
 def render_result():
     # 1. Lock in pairing result ONCE in session state
     if 'matched_wine' not in st.session_state:
