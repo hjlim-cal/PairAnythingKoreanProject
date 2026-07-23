@@ -539,49 +539,52 @@ def get_image_base64(image_path):
 # Custom Dialog Modal with Guaranteed Pink Warning Box (#EFB0DC)
 @st.dialog(" ")
 def show_email_modal():
-    """Renders the custom-styled email modal dialog with exact color overrides."""
+    """Renders the custom-styled email modal dialog with absolute background enforcement."""
     
-    # CSS Overrides for Dialog Container & Elements
+    # Powerful CSS to override Streamlit Cloud's forced Dark Mode on Modals
     st.markdown("""
         <style>
-        /* 1. Modal Body & Base Container Force White/Light Background */
+        /* 1. Target Modal Container & Outer Frame */
+        [data-testid="stDialog"] > div:first-child,
+        [data-testid="stModal"] > div:first-child,
+        div[role="dialog"],
+        div[role="dialog"] * {
+            color: #4E1A3E !important;
+        }
+
+        /* 2. Force Modal Background to Light Gray (#EDEDED) */
         div[role="dialog"],
         div[role="dialog"] > div,
-        div[role="dialog"] [data-testid="stVerticalBlock"] {
+        div[role="dialog"] section,
+        [data-testid="stDialog"] div[data-testid="stVerticalBlock"] {
             background-color: #EDEDED !important;
-            color: #4E1A3E !important;
+            background: #EDEDED !important;
             border-radius: 16px !important;
         }
 
-        /* 2. Dialog Outer Frame */
-        div[role="dialog"] {
-            border: 2px solid #6b1f4a !important;
-            box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.3) !important;
-        }
-
-        /* 3. Input Field Background & Text Fix */
-        div[role="dialog"] input {
+        /* 3. Input Box - Force White BG & Dark Text */
+        div[role="dialog"] input[type="text"] {
             background-color: #FFFFFF !important;
             color: #111111 !important;
-            border: 1.5px solid #6b1f4a !important;
+            border: 1px solid #CCCCCC !important;
             border-radius: 8px !important;
             -webkit-text-fill-color: #111111 !important;
         }
 
-        /* 4. Input Placeholder Color */
+        /* 4. Placeholder Text Color */
         div[role="dialog"] input::placeholder {
             color: #888888 !important;
             -webkit-text-fill-color: #888888 !important;
+            opacity: 1 !important;
         }
 
-        /* 5. Close (X) Button Color */
-        div[role="dialog"] button[aria-label="Close"],
-        div[role="dialog"] button[aria-label="Close"] * {
-            color: #4E1A3E !important;
+        /* 5. Close Button (X) Color */
+        div[role="dialog"] button[aria-label="Close"] svg {
             fill: #4E1A3E !important;
+            color: #4E1A3E !important;
         }
         
-        /* 6. Alert Box Styling */
+        /* 6. Custom Pink Alert Box */
         .custom-pink-alert {
             background-color: #EFB0DC !important;
             color: #4E1A3E !important;
@@ -603,8 +606,8 @@ def show_email_modal():
     # Render Modal Title & Subtitle
     st.markdown("""
         <div style="text-align: center; padding-top: 0px;">
-            <div style="font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: bold; color: #4E1A3E; line-height: 1.1; margin-bottom: 1.2rem;">
-                Seoul<br>& Sip
+            <div style="font-family: 'Playfair Display', Georgia, serif; font-size: 2.2rem; font-weight: bold; color: #4E1A3E; line-height: 1.1; margin-bottom: 1.2rem;">
+                Seoul<br>&amp; Sip
             </div>
             <p style="color: #6B3254; font-size: 0.95rem; margin-bottom: 1.5rem; line-height: 1.4;">
                 Enter your email to get your personalized<br>pairing results.
@@ -617,12 +620,11 @@ def show_email_modal():
     
     st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
     
-    # Track button click inside session state for clean error rendering
+    # Track button click inside session state
     if st.button("SEND RESULT", use_container_width=True, type="primary"):
         if user_email:
             st.session_state.email_error = False
             
-            # Retrieve frozen recommendation data from session state
             matched_wine = st.session_state.get('matched_wine', {})
             matched_food = st.session_state.get('matched_food', {})
             rationale_text = st.session_state.get('rationale_text', '')
@@ -718,7 +720,7 @@ def render_result():
     with col2:
         # 🍳 Retrieve image filename from CSV and set file path
         food_filename = matched_food.get('image_file', 'default.png')
-        food_img_path = f"static/images/{food_filename}"
+        food_img_path = f"app/static/images/{food_filename}"
         food_img_src = get_image_base64(food_img_path)
 
         # 🍳 Korean Food Card Rendering
