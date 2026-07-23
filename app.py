@@ -166,13 +166,13 @@ def move_to(page_name):
     st.session_state.page = page_name
     st.rerun()
 def send_pairing_email(receiver_email, matched_wine, matched_food, rationale_text):
-    """Sends a clean burgundy-bordered email with wine/food details and buy link."""
+    """Sends a clean burgundy-bordered email matching the app's light theme."""
     sender_email = "heejung.lim11@gmail.com"  
     app_password = "qmfb wbus edjt witv"   
     
     subject = "[Seoul & Sip] Your Personalized K-Food & Wine Pairing Result 🍷"
     
-    # Extract details safely
+    # Safely extract wine details
     wine_name = matched_wine.get('Wine', 'Selected Wine')
     winery_name = str(matched_wine.get('winery', '')).upper()
     if winery_name == 'NAN' or not winery_name:
@@ -183,9 +183,15 @@ def send_pairing_email(receiver_email, matched_wine, matched_food, rationale_tex
     if pd.isna(wine_link) or str(wine_link).strip() == '' or str(wine_link) == 'nan':
         wine_link = "https://www.google.com/search?q=" + wine_name.replace(" ", "+")
 
+    # Safely extract food details
     food_en = matched_food.get('food_name_en', matched_food.get('food_name', 'Korean Dish'))
     food_kr = matched_food.get('food_name', '')
     dish_details = matched_food.get('food_description_en', '')
+
+    # Food Image URL extraction (우선순위: food_image_url -> image_url -> 기본 이미지)
+    food_img_url = matched_food.get('food_image_url', matched_food.get('image_url', 'https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?w=600'))
+    if pd.isna(food_img_url) or not str(food_img_url).strip():
+        food_img_url = "https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?w=600"
 
     # Wine Image URL Logic
     wine_type_images = {
@@ -205,7 +211,6 @@ def send_pairing_email(receiver_email, matched_wine, matched_food, rationale_tex
     html_body = f"""
     <html>
     <body style="background-color: #f7f7f7; font-family: 'Helvetica Neue', Arial, sans-serif; padding: 30px 10px; margin: 0;">
-        <!-- Main Outer Box with Burgundy Border -->
         <div style="max-width: 580px; margin: auto; background-color: #ffffff; border-radius: 20px; border: 2px solid #6b1f4a; padding: 40px 30px; box-sizing: border-box;">
             
             <!-- Logo Header -->
@@ -221,7 +226,7 @@ def send_pairing_email(receiver_email, matched_wine, matched_food, rationale_tex
                 Your Perfect Pairing
             </div>
 
-            <!-- Cards Container (Wine & Food transparent cards with Burgundy Stroke) -->
+            <!-- Cards Container -->
             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 25px;">
                 <tr>
                     <!-- Wine Card -->
@@ -233,14 +238,14 @@ def send_pairing_email(receiver_email, matched_wine, matched_food, rationale_tex
                     <td width="4%"></td>
                     <!-- Food Card -->
                     <td width="48%" valign="top" style="background-color: transparent; border: 1.5px solid #6b1f4a; border-radius: 12px; padding: 12px; text-align: center;">
-                        <img src="https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?w=600" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; display: block; margin-bottom: 12px;">
+                        <img src="{food_img_url}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; display: block; margin-bottom: 12px;">
                         <div style="font-size: 13px; font-weight: bold; color: #111111; margin-bottom: 4px;">{food_en}</div>
                         <div style="font-size: 11px; color: #555555;">{food_kr}</div>
                     </td>
                 </tr>
             </table>
 
-            <!-- Rationale Box (Transparent with Burgundy Stroke & Black Text) -->
+            <!-- Rationale Box -->
             <div style="background-color: transparent; border: 1.5px solid #6b1f4a; border-radius: 12px; padding: 20px; color: #111111; font-family: Georgia, serif; font-size: 13px; line-height: 1.6; margin-bottom: 25px;">
                 {rationale_text}
                 <br><br>
@@ -281,7 +286,7 @@ def send_pairing_email(receiver_email, matched_wine, matched_food, rationale_tex
     except Exception as e:
         print(f"Failed to send email: {e}")
         return False
-    
+
 def render_nav(prev_page=None):
     """Renders top navigation header with a perfectly circular back button and centered logo."""
     # Enforce perfect circle styling for buttons wrapped in .nav-back-btn
@@ -313,7 +318,7 @@ def render_nav(prev_page=None):
             
     with cols[1]:
         # Centered brand logo
-        st.markdown('<div class="brand-logo" style="margin-bottom:0; font-size:1.1rem;">Seoul<br>& Sip</div>', unsafe_allow_html=True)
+        st.markdown('<div class="brand-logo" style="margin-bottom:0; font-size:2.1rem;">Seoul<br>& Sip</div>', unsafe_allow_html=True)
         
     st.markdown("<hr style='margin-top:0.5rem; margin-bottom:1.5rem; border-color:#3d1b34;'>", unsafe_allow_html=True)
 # ==========================================
@@ -511,8 +516,10 @@ def render_q4():
     st.markdown("<div style='height: 30px;'></div>", unsafe_allow_html=True)
 
     # Landing CTA Button: Only active/visible after an option is selected
-    if q4_ans:
-        if st.button("SEE MY PAIRING 🍷", type="primary", use_container_width=True):
+    if st.button("SEE MY PAIRING 🍷", type="primary", use_container_width=True):
+        if not q4_ans:
+            st.warning("Please select an option first!")
+        else:
             # Clear previous wine session state to ensure fresh recommendation logic
             if 'matched_wine' in st.session_state:
                 del st.session_state.matched_wine
@@ -537,28 +544,44 @@ def show_email_modal():
     # CSS Overrides for Dialog Container & Elements
     st.markdown("""
         <style>
-        /* Force Modal Background Color (#EDEDED) */
+        /* 1. Modal Body & Base Container Force White/Light Background */
         div[role="dialog"],
-        div[role="dialog"] > div {
+        div[role="dialog"] > div,
+        div[role="dialog"] [data-testid="stVerticalBlock"] {
             background-color: #EDEDED !important;
             color: #4E1A3E !important;
             border-radius: 16px !important;
         }
 
-        /* Input Field Styling */
-        div[role="dialog"] input {
-            background-color: #FFFFFF !important;
-            color: #333333 !important;
-            border: 1px solid #CCCCCC !important;
-            border-radius: 8px !important;
+        /* 2. Dialog Outer Frame */
+        div[role="dialog"] {
+            border: 2px solid #6b1f4a !important;
+            box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.3) !important;
         }
 
-        /* Close Button (X) Styling */
-        div[role="dialog"] button[aria-label="Close"] {
+        /* 3. Input Field Background & Text Fix */
+        div[role="dialog"] input {
+            background-color: #FFFFFF !important;
+            color: #111111 !important;
+            border: 1.5px solid #6b1f4a !important;
+            border-radius: 8px !important;
+            -webkit-text-fill-color: #111111 !important;
+        }
+
+        /* 4. Input Placeholder Color */
+        div[role="dialog"] input::placeholder {
+            color: #888888 !important;
+            -webkit-text-fill-color: #888888 !important;
+        }
+
+        /* 5. Close (X) Button Color */
+        div[role="dialog"] button[aria-label="Close"],
+        div[role="dialog"] button[aria-label="Close"] * {
             color: #4E1A3E !important;
+            fill: #4E1A3E !important;
         }
         
-        /* Custom Pink Alert Box Styling */
+        /* 6. Alert Box Styling */
         .custom-pink-alert {
             background-color: #EFB0DC !important;
             color: #4E1A3E !important;
