@@ -710,14 +710,7 @@ def render_result():
         
     with col2:
         # 🍳 Retrieve image filename from CSV and set file path
-        food_filename = matched_food.get('food_image_file')
-
-        if pd.isna(food_filename) or not str(food_filename).strip():
-            food_filename = matched_food.get('image_file')
-
-        if pd.isna(food_filename) or not str(food_filename).strip():
-            food_filename = 'default.png'
-
+        food_filename = matched_food.get('image_file', 'default.png')
         food_img_path = f"app/static/images/{food_filename}"
         food_img_src = get_image_base64(food_img_path)
 
