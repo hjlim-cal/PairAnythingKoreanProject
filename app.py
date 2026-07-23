@@ -539,31 +539,33 @@ def get_image_base64(image_path):
 # Custom Dialog Modal with Guaranteed Pink Warning Box (#EFB0DC)
 @st.dialog(" ")
 def show_email_modal():
-    """Renders the custom-styled email modal dialog with absolute background enforcement."""
+    """Renders the custom-styled email modal dialog with full container background enforcement."""
     
-    # Powerful CSS to override Streamlit Cloud's forced Dark Mode on Modals
+    # Absolute CSS Override for Modal Shell & All Sub-elements
     st.markdown("""
         <style>
-        /* 1. Target Modal Container & Outer Frame */
-        [data-testid="stDialog"] > div:first-child,
-        [data-testid="stModal"] > div:first-child,
-        div[role="dialog"],
-        div[role="dialog"] * {
-            color: #4E1A3E !important;
-        }
-
-        /* 2. Force Modal Background to Light Gray (#EDEDED) */
+        /* 1. Target Modal Overlay & Outer Dialog Window */
         div[role="dialog"],
         div[role="dialog"] > div,
-        div[role="dialog"] section,
-        [data-testid="stDialog"] div[data-testid="stVerticalBlock"] {
+        div[role="dialog"] > div > div,
+        section[data-testid="stDialog"],
+        [data-testid="stModal"],
+        [data-testid="stDialog"] > div {
             background-color: #EDEDED !important;
             background: #EDEDED !important;
             border-radius: 16px !important;
+            border: none !important;
         }
 
-        /* 3. Input Box - Force White BG & Dark Text */
-        div[role="dialog"] input[type="text"] {
+        /* 2. Remove Padding Artifacts & Force Inner Light Style */
+        div[role="dialog"] [data-testid="stVerticalBlock"] {
+            background-color: #EDEDED !important;
+        }
+
+        /* 3. Input Widget Styling (Force White BG & Dark Text) */
+        div[role="dialog"] div[data-baseweb="input"],
+        div[role="dialog"] div[data-baseweb="base-input"],
+        div[role="dialog"] input {
             background-color: #FFFFFF !important;
             color: #111111 !important;
             border: 1px solid #CCCCCC !important;
@@ -578,13 +580,21 @@ def show_email_modal():
             opacity: 1 !important;
         }
 
-        /* 5. Close Button (X) Color */
-        div[role="dialog"] button[aria-label="Close"] svg {
+        /* 5. Close Button (X) Styling */
+        div[role="dialog"] button[aria-label="Close"],
+        div[role="dialog"] button[aria-label="Close"] * {
+            color: #4E1A3E !important;
             fill: #4E1A3E !important;
+        }
+
+        /* 6. Footer & Text Colors inside Modal */
+        div[role="dialog"] p, 
+        div[role="dialog"] span, 
+        div[role="dialog"] div {
             color: #4E1A3E !important;
         }
-        
-        /* 6. Custom Pink Alert Box */
+
+        /* 7. Alert Box Styling */
         .custom-pink-alert {
             background-color: #EFB0DC !important;
             color: #4E1A3E !important;
@@ -606,10 +616,10 @@ def show_email_modal():
     # Render Modal Title & Subtitle
     st.markdown("""
         <div style="text-align: center; padding-top: 0px;">
-            <div style="font-family: 'Playfair Display', Georgia, serif; font-size: 2.2rem; font-weight: bold; color: #4E1A3E; line-height: 1.1; margin-bottom: 1.2rem;">
+            <div style="font-family: 'Playfair Display', Georgia, serif; font-size: 2.2rem; font-weight: bold; color: #4E1A3E !important; line-height: 1.1; margin-bottom: 1.2rem;">
                 Seoul<br>&amp; Sip
             </div>
-            <p style="color: #6B3254; font-size: 0.95rem; margin-bottom: 1.5rem; line-height: 1.4;">
+            <p style="color: #6B3254 !important; font-size: 0.95rem; margin-bottom: 1.5rem; line-height: 1.4;">
                 Enter your email to get your personalized<br>pairing results.
             </p>
         </div>
@@ -620,7 +630,7 @@ def show_email_modal():
     
     st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
     
-    # Track button click inside session state
+    # Track button click inside session state for clean error rendering
     if st.button("SEND RESULT", use_container_width=True, type="primary"):
         if user_email:
             st.session_state.email_error = False
@@ -651,13 +661,13 @@ def show_email_modal():
             </div>
         """, unsafe_allow_html=True)
             
-    # Privacy Footer
+    # Privacy Footer (Color explicitly forced)
     st.markdown("""
-        <div style="text-align: center; margin-top: 15px; font-size: 0.8rem; color: #777777;">
+        <div style="text-align: center; margin-top: 15px; font-size: 0.8rem; color: #666666 !important;">
             🔒 We respect your privacy.
         </div>
     """, unsafe_allow_html=True)
-
+    
 def render_result():
     # 1. Lock in pairing result ONCE in session state
     if 'matched_wine' not in st.session_state:
@@ -719,7 +729,14 @@ def render_result():
         
     with col2:
         # 🍳 Retrieve image filename from CSV and set file path
-        food_filename = matched_food.get('image_file', 'default.png')
+        food_filename = matched_food.get('food_image_file')
+
+        if pd.isna(food_filename) or not str(food_filename).strip():
+            food_filename = matched_food.get('image_file')
+
+        if pd.isna(food_filename) or not str(food_filename).strip():
+            food_filename = 'default.png'
+
         food_img_path = f"app/static/images/{food_filename}"
         food_img_src = get_image_base64(food_img_path)
 
