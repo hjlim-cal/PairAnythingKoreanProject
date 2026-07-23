@@ -1,6 +1,10 @@
 import streamlit as st
 import pandas as pd
 import random
+import base64
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 # ==========================================
 # 1. Page Configuration
@@ -33,7 +37,27 @@ wine_data, food_data = load_data()
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..700;1,400..700&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&display=swap');
     
+    .brand-logo {
+        font-family: 'Playfair Display', serif;
+        font-size: 3.6rem;
+        line-height: 1.1;
+        text-align: center;
+        color: rgba(255, 211, 211, 0.6); 
+        letter-spacing: -0.5px;
+        margin-bottom: 2rem;
+    }
+    
+    .main-title {
+        font-family: 'Bodoni Moda', 'Playfair Display', serif;
+        font-size: 2.2rem;
+        font-weight: 600;
+        text-align: center;
+        color: #FFFFFF;
+        letter-spacing: -0.3px;
+        margin-bottom: 1.5rem;
+    }
     /* Global App Style */
     .stApp {
         background-color: #1a0515 !important;
@@ -89,18 +113,22 @@ st.markdown("""
         color: #ffffff !important;
     }
 
-    /* Back Button Style (Perfect Circle) */
-    .nav-back-btn div.stButton > button {
-        border-radius: 50% !important;
-        width: 44px !important;
-        height: 44px !important;
-        min-height: 44px !important;
-        padding: 0 !important;
-        display: flex !important;
-        justify-content: center !important;
-        align-items: center !important;
-        text-align: center !important;
-        border: 1px solid #422039 !important;
+    /* Clean Custom Progress Bar Styling */
+    .custom-progress-track {
+        width: 100%;
+        background-color: #4E1A3E; /* Dark background bar */
+        border-radius: 10px;
+        height: 8px;
+        overflow: hidden;
+        margin-top: 10px;
+        margin-bottom: 20px;
+    }
+
+    .custom-progress-fill {
+        height: 100%;
+        background-color: #AA8EA7; /* Light active progress bar */
+        border-radius: 10px;
+        transition: width 0.3s ease-in-out;
     }
 
     /* Primary Action Button & Selected Option Highlight */
@@ -137,8 +165,144 @@ if 'answers' not in st.session_state:
 def move_to(page_name):
     st.session_state.page = page_name
     st.rerun()
+def send_pairing_email(receiver_email, matched_wine, matched_food, rationale_text):
+    """Sends a clean burgundy-bordered email with wine/food details and buy link."""
+    sender_email = "heejung.lim11@gmail.com"  
+    app_password = "qmfb wbus edjt witv"   
+    
+    subject = "[Seoul & Sip] Your Personalized K-Food & Wine Pairing Result 🍷"
+    
+    # Extract details safely
+    wine_name = matched_wine.get('Wine', 'Selected Wine')
+    winery_name = str(matched_wine.get('winery', '')).upper()
+    if winery_name == 'NAN' or not winery_name:
+        winery_name = ""
+        
+    # Extract wine link from 'info_url_x' column with Google Search fallback
+    wine_link = matched_wine.get('info_url_x', '#')
+    if pd.isna(wine_link) or str(wine_link).strip() == '' or str(wine_link) == 'nan':
+        wine_link = "https://www.google.com/search?q=" + wine_name.replace(" ", "+")
 
+    food_en = matched_food.get('food_name_en', matched_food.get('food_name', 'Korean Dish'))
+    food_kr = matched_food.get('food_name', '')
+    dish_details = matched_food.get('food_description_en', '')
+
+    # Wine Image URL Logic
+    wine_type_images = {
+        1: "https://images.pexels.com/photos/1123260/pexels-photo-1123260.jpeg?auto=compress&cs=tinysrgb&w=600",
+        2: "https://images.unsplash.com/photo-1558001373-7b93ee48ffa0?auto=format&fit=crop&w=600&q=80",
+        3: "https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?auto=format&fit=crop&w=600&q=80",
+        4: "https://images.unsplash.com/photo-1613477581402-306fa9dc6b95?q=80&w=774&auto=format&fit=crop"
+    }
+    try:
+        raw_type = matched_wine.get('wine_type', 3)
+        wine_type_id = int(raw_type) if not pd.isna(raw_type) else 3
+    except (ValueError, TypeError):
+        wine_type_id = 3
+    wine_img_url = wine_type_images.get(wine_type_id, wine_type_images[3])
+
+    # HTML Email Template
+    html_body = f"""
+    <html>
+    <body style="background-color: #f7f7f7; font-family: 'Helvetica Neue', Arial, sans-serif; padding: 30px 10px; margin: 0;">
+        <!-- Main Outer Box with Burgundy Border -->
+        <div style="max-width: 580px; margin: auto; background-color: #ffffff; border-radius: 20px; border: 2px solid #6b1f4a; padding: 40px 30px; box-sizing: border-box;">
+            
+            <!-- Logo Header -->
+            <div style="text-align: center; margin-bottom: 20px;">
+                <div style="font-family: Georgia, serif; font-size: 32px; font-weight: bold; color: #6b1f4a; line-height: 1.1;">
+                    Seoul<br>&amp; Sip
+                </div>
+            </div>
+            
+            <hr style="border: none; border-top: 1px solid #e0e0e0; margin-bottom: 30px;">
+            
+            <div style="text-align: center; font-family: Georgia, serif; font-size: 22px; font-weight: bold; color: #111111; margin-bottom: 25px;">
+                Your Perfect Pairing
+            </div>
+
+            <!-- Cards Container (Wine & Food transparent cards with Burgundy Stroke) -->
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 25px;">
+                <tr>
+                    <!-- Wine Card -->
+                    <td width="48%" valign="top" style="background-color: transparent; border: 1.5px solid #6b1f4a; border-radius: 12px; padding: 12px; text-align: center;">
+                        <img src="{wine_img_url}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; display: block; margin-bottom: 12px;">
+                        <div style="font-size: 13px; font-weight: bold; color: #111111; text-transform: uppercase; margin-bottom: 4px;">{wine_name}</div>
+                        <div style="font-size: 11px; font-style: italic; color: #555555; text-transform: uppercase;">{winery_name}</div>
+                    </td>
+                    <td width="4%"></td>
+                    <!-- Food Card -->
+                    <td width="48%" valign="top" style="background-color: transparent; border: 1.5px solid #6b1f4a; border-radius: 12px; padding: 12px; text-align: center;">
+                        <img src="https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?w=600" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; display: block; margin-bottom: 12px;">
+                        <div style="font-size: 13px; font-weight: bold; color: #111111; margin-bottom: 4px;">{food_en}</div>
+                        <div style="font-size: 11px; color: #555555;">{food_kr}</div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Rationale Box (Transparent with Burgundy Stroke & Black Text) -->
+            <div style="background-color: transparent; border: 1.5px solid #6b1f4a; border-radius: 12px; padding: 20px; color: #111111; font-family: Georgia, serif; font-size: 13px; line-height: 1.6; margin-bottom: 25px;">
+                {rationale_text}
+                <br><br>
+                <span style="color: #555555; font-size: 11px; font-family: Arial, sans-serif;">Dish details: {dish_details}</span>
+            </div>
+
+            <!-- Wine Link CTA Button -->
+            <div style="text-align: center; margin-bottom: 35px;">
+                <a href="{wine_link}" target="_blank" style="background-color: #6b1f4a; color: #ffffff; padding: 14px 28px; border-radius: 8px; font-weight: bold; font-size: 14px; text-decoration: none; display: inline-block;">
+                    🍷 VIEW &amp; BUY THIS WINE
+                </a>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid #e0e0e0; margin-bottom: 20px;">
+
+            <!-- Footer -->
+            <div style="text-align: center; font-size: 12px; color: #777777;">
+                © Pair Anything All rights reserved.
+            </div>
+            
+        </div>
+    </body>
+    </html>
+    """
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = f"Seoul & Sip <{sender_email}>"
+    msg["To"] = receiver_email
+    msg.attach(MIMEText(html_body, "html"))
+
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(sender_email, app_password)
+            server.sendmail(sender_email, receiver_email, msg.as_string())
+        return True
+    except Exception as e:
+        print(f"Failed to send email: {e}")
+        return False
+    
 def render_nav(prev_page=None):
+    """Renders top navigation header with a perfectly circular back button and centered logo."""
+    # Enforce perfect circle styling for buttons wrapped in .nav-back-btn
+    st.markdown("""
+        <style>
+        .nav-back-btn div.stButton > button {
+            border-radius: 50% !important;
+            width: 42px !important;
+            height: 42px !important;
+            min-width: 42px !important;
+            max-width: 42px !important;
+            min-height: 42px !important;
+            max-height: 42px !important;
+            padding: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
     cols = st.columns([1, 8, 1])
     with cols[0]:
         if prev_page:
@@ -146,10 +310,12 @@ def render_nav(prev_page=None):
             if st.button("←", key=f"back_{prev_page}"):
                 move_to(prev_page)
             st.markdown('</div>', unsafe_allow_html=True)
+            
     with cols[1]:
-        st.markdown("<div style='text-align:center; font-family:\"Playfair Display\", serif; font-size:1.3rem; letter-spacing:0.05em;'>Seoul & Sip</div>", unsafe_allow_html=True)
+        # Centered brand logo
+        st.markdown('<div class="brand-logo" style="margin-bottom:0; font-size:1.1rem;">Seoul<br>& Sip</div>', unsafe_allow_html=True)
+        
     st.markdown("<hr style='margin-top:0.5rem; margin-bottom:1.5rem; border-color:#3d1b34;'>", unsafe_allow_html=True)
-
 # ==========================================
 # 5. Core Matching Logic (Real Filter)
 # ==========================================
@@ -157,7 +323,7 @@ def get_matching_result(answers):
     f_df = food_data.copy()
     w_df = wine_data.copy()
 
-    # --- [1] 한식 필터링 (Spice Tolerance) ---
+    # --- [1] filter (Spice Tolerance) ---
     spice = answers.get('q4', 'A')
     if spice == 'A':   
         f_df = f_df[f_df['Spiciness_Heat'].astype(str).str.contains('Mild|Low|0|1|2', case=False, na=False)]
@@ -166,18 +332,18 @@ def get_matching_result(answers):
     elif spice == 'C': 
         f_df = f_df[f_df['Spiciness_Heat'].astype(str).str.contains('Hot|High|Spicy|3|4|5', case=False, na=False)]
 
-    # --- [2] Diet 필터 보정 (Ocean vibes only 완벽 차단) ---
+    # --- [2] Diet filter (block Ocean vibes only) ---
     diet = answers.get('q2', 'C')
     if diet == 'A': # Vegetarian  
         f_df = f_df[~f_df['food_description_en'].astype(str).str.contains('meat|pork|beef|chicken|seafood|fish|sausage|blood', case=False, na=False)]
     
     elif diet == 'B': # Pescatarian (Ocean vibes only)
-        # 1. 육류 완전 차단 (sausage, blood, pork, beef, chicken, meat 제거)
+        # 1. no meats (no sausage, blood, pork, beef, chicken, meat )
         f_df = f_df[~f_df['food_description_en'].astype(str).str.contains('meat|pork|beef|chicken|sausage|blood|ribs', case=False, na=False)]
-        # 2. 반드시 해산물 키워드가 포함된 요리만 선택 (낙지, 아구찜, 게장, 해물탕 등)
+        # 2. must contain seafood (octopus, agujjim etc)
         seafood_matches = f_df['food_description_en'].astype(str).str.contains('seafood|fish|squid|octopus|crab|shrimp|monkfish|mackerel|beltfish', case=False, na=False)
         
-        # 해산물 요리가 존재하면 필터링 적용, 데이터 부족으로 비어버릴 때만 전체 폴백
+        # Apply seafood filtering if matching items exist; fallback to full dataset if empty to prevent zero results
         if seafood_matches.any():
             f_df = f_df[seafood_matches]
 
@@ -186,7 +352,7 @@ def get_matching_result(answers):
 
     matched_food = f_df.sample(1).iloc[0]
 
-    # --- [3] 와인 필터링 ---
+    # --- [3] wine filtering ---
     palate = answers.get('q1', 'B')
     if palate == 'A':   
         w_df = w_df[w_df['light/bold (body)'].astype(str).str.contains('Light|Medium', case=False, na=False)]
@@ -208,31 +374,43 @@ def get_matching_result(answers):
 # ==========================================
 
 def render_intro():
-    st.markdown("<div style='height: 50px;'></div>", unsafe_allow_html=True)
-    st.markdown("<div class='app-title'>Seoul<br>& Sip</div>", unsafe_allow_html=True)
-    st.markdown("<h3 style='text-align:center; font-size:1.4rem; font-weight:400; margin-bottom:2rem;'>The Wine Questionnaire</h3>", unsafe_allow_html=True)
+    # Subtle "Seoul & Sip" logo header with opacity styling
+    st.markdown('<div class="brand-logo">Seoul<br>& Sip</div>', unsafe_allow_html=True)
     
+    # Elegant serif main title
+    st.markdown('<div class="main-title">The Wine Questionnaire</div>', unsafe_allow_html=True)
+    
+    # Subtitle description text
     st.markdown("""
-        <div style='text-align:center; font-family:"Lora", serif; font-size:0.95rem; color:#b3a1ab; line-height:1.6; margin-bottom:3rem;'>
-        Four questions. Endless possibilities.<br>
-        Your perfect bottle and Korean pairing<br>
-        wait at the end of the scene.
-        </div>
+        <p style='text-align: center; color: #b3a1ab; font-family: "Lora", serif; font-size: 1rem; line-height: 1.6; margin-bottom: 2.5rem;'>
+            Four questions. Endless possibilities.<br>
+            Your perfect bottle and Korean pairing wait at the end of the scene.
+        </p>
     """, unsafe_allow_html=True)
     
+    # Primary CTA button to start the questionnaire
     if st.button("FIND MY MATCH", type="primary", use_container_width=True):
         move_to('q1')
+# Helper function to render a single-layer custom progress bar
+def render_custom_progress(percent):
+    """Renders a clean custom progress bar without Streamlit's default double-layer issue."""
+    st.markdown(f"""
+        <div class="custom-progress-track">
+            <div class="custom-progress-fill" style="width: {percent}%;"></div>
+        </div>
+    """, unsafe_allow_html=True)
+
 
 def render_q1():
     render_nav(prev_page='intro')
-    st.progress(0.25) 
+    render_custom_progress(25) 
     st.markdown("<div class='kicker'>WINE PALATE</div>", unsafe_allow_html=True)
     st.markdown("<div class='question-title'>What's your wine backstory?</div>", unsafe_allow_html=True)
     
-    # 현재 선택된 답이 있는지 확인
+    # check if there's selected answer
     q1_ans = st.session_state.answers.get('q1', None)
     
-    # 선택된 버튼만 버건디 색상(primary)으로 렌더링
+    # change color darker when selected
     if st.button("A  🍇  Just starting my wine journey.", type="primary" if q1_ans == 'A' else "secondary", use_container_width=True):
         st.session_state.answers['q1'] = 'A'
         st.rerun()
@@ -245,14 +423,14 @@ def render_q1():
         
     st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
     if st.button("CONTINUE", key="next_q1", use_container_width=True):
-        if q1_ans: # 선택이 되었을 때만 다음 페이지로 이동
+        if q1_ans: # move to next page only when an answer selected
             move_to('q2')
         else:
             st.toast("⚠️ Please select an option first!")
 
 def render_q2():
     render_nav(prev_page='q1')
-    st.progress(0.50) 
+    render_custom_progress(50) 
     st.markdown("<div class='kicker'>DIETARY NOTE</div>", unsafe_allow_html=True)
     st.markdown("<div class='question-title'>Any specific dietary preferences for tonight's menu?</div>", unsafe_allow_html=True)
     
@@ -277,7 +455,7 @@ def render_q2():
 
 def render_q3():
     render_nav(prev_page='q2')
-    st.progress(0.75)
+    render_custom_progress(75)
     st.markdown("<div class='kicker'>THE OCCASION</div>", unsafe_allow_html=True)
     st.markdown("<div class='question-title'>What's the vibe for tonight's scene?</div>", unsafe_allow_html=True)
     
@@ -301,68 +479,200 @@ def render_q3():
             st.toast("⚠️ Please select an option first!")
 
 def render_q4():
+    # Render back navigation button
     render_nav(prev_page='q3')
-    st.progress(1.0)
+    
+    # Render custom single-layer progress bar (100% for Question 4)
+    render_custom_progress(100)
+    
+    # Question Header
     st.markdown("<div class='kicker'>SPICE TOLERANCE</div>", unsafe_allow_html=True)
     st.markdown("<div class='question-title'>How much heat can your character handle?</div>", unsafe_allow_html=True)
     
+    # Retrieve existing answer for Q4 if previously selected
     q4_ans = st.session_state.answers.get('q4', None)
     
+    # Option A: Only save answer on click and trigger UI refresh to highlight selection
     if st.button("A  🍦  Keep it mild. No spice for me, please.", type="primary" if q4_ans == 'A' else "secondary", use_container_width=True):
         st.session_state.answers['q4'] = 'A'
         st.rerun()
+        
+    # Option B: Only save answer on click
     if st.button("B  🌶️  Medium spice. Ready for a little kick.", type="primary" if q4_ans == 'B' else "secondary", use_container_width=True):
         st.session_state.answers['q4'] = 'B'
         st.rerun()
+        
+    # Option C: Only save answer on click
     if st.button("C  🔥  I can handle the heat! Bring on the authentic K-spice.", type="primary" if q4_ans == 'C' else "secondary", use_container_width=True):
         st.session_state.answers['q4'] = 'C'
         st.rerun()
-        
-    st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
-    if st.button("SEE MY PAIRING", key="to_result", use_container_width=True):
-        if q4_ans:
+
+    # Spacing before CTA landing button
+    st.markdown("<div style='height: 30px;'></div>", unsafe_allow_html=True)
+
+    # Landing CTA Button: Only active/visible after an option is selected
+    if q4_ans:
+        if st.button("SEE MY PAIRING 🍷", type="primary", use_container_width=True):
+            # Clear previous wine session state to ensure fresh recommendation logic
+            if 'matched_wine' in st.session_state:
+                del st.session_state.matched_wine
             move_to('result')
+
+def get_image_base64(image_path):
+    """Convert a local image file into a Base64 string for direct HTML rendering."""
+    try:
+        with open(image_path, "rb") as img_file:
+            encoded = base64.b64encode(img_file.read()).decode()
+            return f"data:image/png;base64,{encoded}"
+    except Exception:
+        # Fallback image URL in case the file is missing
+        return "https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=600"
+    
+
+# Custom Dialog Modal with Guaranteed Pink Warning Box (#EFB0DC)
+@st.dialog(" ")
+def show_email_modal():
+    """Renders the custom-styled email modal dialog with exact color overrides."""
+    
+    # CSS Overrides for Dialog Container & Elements
+    st.markdown("""
+        <style>
+        /* Force Modal Background Color (#EDEDED) */
+        div[role="dialog"],
+        div[role="dialog"] > div {
+            background-color: #EDEDED !important;
+            color: #4E1A3E !important;
+            border-radius: 16px !important;
+        }
+
+        /* Input Field Styling */
+        div[role="dialog"] input {
+            background-color: #FFFFFF !important;
+            color: #333333 !important;
+            border: 1px solid #CCCCCC !important;
+            border-radius: 8px !important;
+        }
+
+        /* Close Button (X) Styling */
+        div[role="dialog"] button[aria-label="Close"] {
+            color: #4E1A3E !important;
+        }
+        
+        /* Custom Pink Alert Box Styling */
+        .custom-pink-alert {
+            background-color: #EFB0DC !important;
+            color: #4E1A3E !important;
+            padding: 10px 14px !important;
+            border-radius: 8px !important;
+            font-size: 0.9rem !important;
+            font-weight: 600 !important;
+            margin-top: 10px !important;
+            margin-bottom: 10px !important;
+            text-align: left !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            border: 1px solid #D88CB8 !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    # Render Modal Title & Subtitle
+    st.markdown("""
+        <div style="text-align: center; padding-top: 0px;">
+            <div style="font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: bold; color: #4E1A3E; line-height: 1.1; margin-bottom: 1.2rem;">
+                Seoul<br>& Sip
+            </div>
+            <p style="color: #6B3254; font-size: 0.95rem; margin-bottom: 1.5rem; line-height: 1.4;">
+                Enter your email to get your personalized<br>pairing results.
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # Email Input Field
+    user_email = st.text_input("EMAIL", placeholder="yourname@email.com", label_visibility="collapsed")
+    
+    st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+    
+    # Track button click inside session state for clean error rendering
+    if st.button("SEND RESULT", use_container_width=True, type="primary"):
+        if user_email:
+            st.session_state.email_error = False
+            
+            # Retrieve frozen recommendation data from session state
+            matched_wine = st.session_state.get('matched_wine', {})
+            matched_food = st.session_state.get('matched_food', {})
+            rationale_text = st.session_state.get('rationale_text', '')
+            
+            with st.spinner("Sending email..."):
+                success = send_pairing_email(user_email, matched_wine, matched_food, rationale_text)
+                
+            if success:
+                st.success("Results sent to your inbox!")
+                import time
+                time.sleep(1.5)  
+                st.rerun()       
+            else:
+                st.error("Failed to send email. Please check your address.")
         else:
-            st.toast("⚠️ Please select an option first!")
+            st.session_state.email_error = True
+            
+    # Display Custom Pink Alert Box if Validation Fails
+    if st.session_state.get('email_error', False):
+        st.markdown("""
+            <div class="custom-pink-alert">
+                <span>⚠️</span>
+                <span>Please enter your email address.</span>
+            </div>
+        """, unsafe_allow_html=True)
+            
+    # Privacy Footer
+    st.markdown("""
+        <div style="text-align: center; margin-top: 15px; font-size: 0.8rem; color: #777777;">
+            🔒 We respect your privacy.
+        </div>
+    """, unsafe_allow_html=True)
 
 def render_result():
-    st.markdown("<div style='text-align:center; font-family:\"Playfair Display\", serif; font-size:1.5rem; margin-bottom:0.5rem;'>Seoul & Sip</div>", unsafe_allow_html=True)
-    st.markdown("<h2 style='text-align:center; font-size:1.8rem; font-weight:700; margin-bottom:2rem;'>Your Perfect Pairing</h2>", unsafe_allow_html=True)
-    
-    matched_wine, matched_food = get_matching_result(st.session_state.answers)
+    # 1. Lock in pairing result ONCE in session state
+    if 'matched_wine' not in st.session_state:
+        matched_wine, matched_food = get_matching_result(st.session_state.answers)
+        st.session_state.matched_wine = matched_wine
+        st.session_state.matched_food = matched_food
+    else:
+        matched_wine = st.session_state.matched_wine
+        matched_food = st.session_state.matched_food
+
+    # Extract details safely
     wine_name = matched_wine['Wine']
+    food_en = matched_food['food_name_en']
+    food_kr = matched_food['food_name']
+
+    # Store text summary for email delivery function
+    st.session_state.pairing_result = f"Wine: {wine_name} | Pairing Dish: {food_en} ({food_kr})"
+
+    # Subtle "Seoul & Sip" logo header
+    st.markdown('<div class="brand-logo">Seoul<br>& Sip</div>', unsafe_allow_html=True)
     
-    wine_name = matched_wine['Wine']
+    # Elegant serif main title
+    st.markdown('<div class="main-title">Your Perfect Pairing</div>', unsafe_allow_html=True)
     
-    # 1. 와인 타입(1, 2, 3, 4)별 고화질 대표 이미지 딕셔너리 세팅
+    # 1. Types of wine images
     wine_type_images = {
-        # 📍 [1.white]
         1: "https://images.pexels.com/photos/1123260/pexels-photo-1123260.jpeg?auto=compress&cs=tinysrgb&w=600", 
-        
-        # 📍 [2. rose]
         2: "https://images.unsplash.com/photo-1558001373-7b93ee48ffa0?auto=format&fit=crop&w=600&q=80", 
-        
-        # 📍 [3. red] 
         3: "https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?auto=format&fit=crop&w=600&q=80", 
-        
-        # 📍 [4. bubbly] 
         4: "https://images.unsplash.com/photo-1613477581402-306fa9dc6b95?q=80&w=774&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
     }
     
-    # 2. DB에서 wine_type 숫자를 가져와 이미지 매핑 (문자열 형태일 경우 대비 int 변환)
+    # 2. wine_type mapping to the image
     try:
         raw_type = matched_wine.get('wine_type', 3)
         wine_type_id = int(raw_type) if not pd.isna(raw_type) else 3
     except (ValueError, TypeError):
-        wine_type_id = 3 # 예외 시 기본값 레드
+        wine_type_id = 3 # default: red wine
         
-    # 3. 태그 숫자에 맞는 이미지 URL 할당 (없는 숫자일 경우 기본 3번 레드 적용)
     generated_img_url = wine_type_images.get(wine_type_id, wine_type_images[3])
-    
- # 변수 선언 (와인 & 한식)
-    wine_name = matched_wine['Wine']
-    food_en = matched_food['food_name_en']
-    food_kr = matched_food['food_name']
             
     winery_name = matched_wine.get('winery', '')
     winery_display = str(winery_name).upper() if not pd.isna(winery_name) and str(winery_name) != 'nan' else ''
@@ -370,7 +680,7 @@ def render_result():
     col1, col2 = st.columns(2)
     
     with col1:
-        # 🍷 와인 카드 (Streamlit이 코드 블록으로 인식하지 못하도록 왼쪽 여백을 0으로 밀착)
+        # 🍷 Wine Card Rendering
         html_col1 = f"""<div class="result-card" style="min-height: 380px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 15px; border-radius: 12px; background-color: #1e131d;">
 <div style="width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 15px;">
 <img src="{generated_img_url}" style="width: 100%; object-fit: cover; aspect-ratio: 4/3; display: block; border-radius: 8px;" />
@@ -383,37 +693,40 @@ def render_result():
         st.markdown(html_col1, unsafe_allow_html=True)
         
     with col2:
-        # 🍳 한식 카드
+        # 🍳 Retrieve image filename from CSV and set file path
+        food_filename = matched_food.get('image_file', 'default.png')
+        food_img_path = f"static/images/{food_filename}"
+        food_img_src = get_image_base64(food_img_path)
+
+        # 🍳 Korean Food Card Rendering
         html_col2 = f"""<div class="result-card" style="min-height: 380px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 15px; border-radius: 12px; background-color: #1e131d;">
-<div style="font-size: 4rem; display: flex; align-items: center; justify-content: center; flex-grow: 1;">🍳</div>
-<div style="text-align: center; padding-bottom: 10px;">
+<div style="width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 15px;">
+<img src="{food_img_src}" style="width: 100%; object-fit: cover; aspect-ratio: 4/3; display: block; border-radius: 8px;" />
+</div>
+<div style="text-align: center; margin-top: auto; padding-bottom: 10px;">
 <div style="font-size: 1.1rem; font-weight: bold; color: #FFFFFF;">{food_en}</div>
 <div style="font-size: 0.85rem; color: #b3a1ab; margin-top: 4px;">{food_kr}</div>
 </div>
 </div>"""
         st.markdown(html_col2, unsafe_allow_html=True)
-    # 1. 와인 데이터베이스의 데이터 안전하게 처리
-    wine_name = matched_wine['Wine']
-    
-    # wine_type이 숫자로 나오면 'wine'으로 안전하게 대체
+
+    # 1. Fallback wine_type to 'wine' if numeric or missing
     wine_type = str(matched_wine.get('wine_type', 'wine'))
     if wine_type.isdigit() or wine_type == '3' or wine_type == 'nan':
         wine_type = 'wine'
 
-    # 2. key flavors 데이터 정제
+    # 2. Key flavors data
     key_flavors = matched_wine.get('key flavors', '')
     if pd.isna(key_flavors) or key_flavors == '':
         flavor_str = "its beautifully balanced structure"
     else:
         flavor_str = f"its distinct notes of {str(key_flavors).lower()}"
 
-    # 3. pairing_notes 데이터 분석 및 가독성 업그레이드
+    # 3. Pairing notes analysis
     pairing_notes = matched_wine.get('pairing_notes', '')
     
     if not pd.isna(pairing_notes) and pairing_notes != '':
-        # 만약 콤마로 연결된 음식 리스트라면 자연스러운 텍스트로 변환
         if ',' in str(pairing_notes):
-            # 콤마 기준 상위 3개 어울리는 서양 요리만 예시로 추출
             western_dishes = ", ".join([d.strip() for d in str(pairing_notes).split(',')[:3]])
             rationale_text = (
                 f"While <b>{wine_name}</b> is traditionally celebrated alongside dishes like {western_dishes}, "
@@ -421,17 +734,17 @@ def render_result():
                 f"The flavor profile, enriched by {flavor_str}, seamlessly bridges the gap to create a beautiful harmony with <b>{food_en}</b>."
             )
         else:
-            # 텍스트 설명글 형태인 경우
             rationale_text = f"This pairing shines because this exceptional {wine_type} elevates the dining experience. Specifically, {pairing_notes}"
     else:
-        # 데이터가 아예 없을 경우 폴백 문장
         rationale_text = (
             f"This pairing works beautifully because the unique character of <b>{wine_name}</b>, "
             f"driven by {flavor_str}, harmonizes gracefully with the seasoned elements of <b>{food_en}</b>, "
             f"creating a delightful balance on the palate."
         )
 
-    # 4. 스트림릿 UI 화면에 반영
+    # 4. Streamlit UI Explanation Card
+    st.session_state.rationale_text = rationale_text
+
     st.markdown(f"""
         <div style='background-color:#260d20; border: 1px solid #3d1b34; border-radius:12px; padding:1.5rem; font-family:"Lora", serif; font-size:0.95rem; line-height:1.6;'>
         {rationale_text}
@@ -440,20 +753,23 @@ def render_result():
         </div>
     """, unsafe_allow_html=True)
     
-    
-    
-    st.markdown("<div style='height: 30px;'></div>", unsafe_allow_html=True)
-    
+    # Equalized 1:1 Action Buttons
+    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
     col_btn1, col_btn2 = st.columns(2)
+    
     with col_btn1:
-        if st.button("EMAIL MY PAIRING", type="primary", use_container_width=True):
-            st.toast("📧 Email feature coming soon!")
+        if st.button("EMAIL MY PAIRING", use_container_width=True):
+            show_email_modal()
             
     with col_btn2:
         if st.button("START OVER", use_container_width=True):
+            # Complete reset of saved session state for a fresh quiz start
             st.session_state.answers = {}
+            if 'matched_wine' in st.session_state:
+                del st.session_state.matched_wine
+            if 'matched_food' in st.session_state:
+                del st.session_state.matched_food
             move_to('intro')
-
 # ==========================================
 # 7. Router
 # ==========================================
