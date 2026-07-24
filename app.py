@@ -235,6 +235,29 @@ st.markdown("""
         border: 1px solid #3d1b34;
         text-align: center;
     }
+    /* Quiz page navigation only */
+    .nav-logo {
+        height: 42px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        font-family: 'Playfair Display', serif;
+        font-size: 1rem;
+        font-weight: 600;
+        line-height: 1;
+
+        color: #ffffff;
+        text-align: center;
+
+        margin: 0;
+        padding: 0;
+    }
+
+    .st-key-quiz_nav div[data-testid="stHorizontalBlock"] {
+        align-items: center;
+    }
     </style>
 """, unsafe_allow_html=True)
 # ==========================================
@@ -404,31 +427,30 @@ def send_pairing_email(receiver_email, matched_wine, matched_food, rationale_tex
         return False
 
 def render_nav(prev_page=None):
-    """Renders top navigation header with a perfectly circular back button and centered logo."""
+    """Compact navigation used only on quiz pages."""
 
-    cols = st.columns([1, 8, 1])
+    with st.container(key="quiz_nav"):
+        cols = st.columns([1, 8, 1], gap="small")
 
-    with cols[0]:
-        if prev_page:
-            with st.container(key="nav_back_button"):
-                if st.button(
-                    "←",
-                    key=f"back_{prev_page}",
-                    width=42
-                ):
-                    move_to(prev_page)
+        with cols[0]:
+            if prev_page:
+                with st.container(key="nav_back_button"):
+                    if st.button(
+                        "←",
+                        key=f"back_{prev_page}",
+                        width=42
+                    ):
+                        move_to(prev_page)
 
-    with cols[1]:
-        st.markdown(
-            '<div class="brand-logo" '
-            'style="margin-bottom:0; margin-top:0; padding-top:0; '
-            'font-size:2.1rem; text-align:center;">'
-            'Seoul<br>& Sip</div>',
-            unsafe_allow_html=True
-        )
+        with cols[1]:
+            st.markdown(
+                '<div class="nav-logo">Seoul &amp; Sip</div>',
+                unsafe_allow_html=True
+            )
 
     st.markdown(
-        "<hr style='margin-top:0.5rem; margin-bottom:1.5rem; "
+        "<hr style='margin-top:0.35rem; "
+        "margin-bottom:1rem; "
         "border-color:#3d1b34;'>",
         unsafe_allow_html=True
     )
