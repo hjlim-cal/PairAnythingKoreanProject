@@ -17,7 +17,7 @@ st.markdown("""
     <style>
     /* 1. remove margin on top */
     .block-container {
-        padding-top: 1.5rem !important;
+        padding-top: 0.3rem !important;
         margin-top: 0rem !important;
     }
     header[data-testid="stHeader"] {
@@ -26,7 +26,26 @@ st.markdown("""
     
 
     /* 2. back button fix to round shape */
-    
+
+    /* circle 42by42 */
+    .st-key-nav_back_button button {
+        width: 42px !important;
+        height: 42px !important;
+        min-width: 42px !important;
+        max-width: 42px !important;
+        min-height: 42px !important;
+        max-height: 42px !important;
+
+        padding: 0 !important;
+        border-radius: 50% !important;
+
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        line-height: 1 !important;
+    }
+
     /* 
     div[data-testid="stHorizontalBlock"] div[data-testid="column"]:nth-child(1) div.stButton > button {
         border-radius: 50% !important;
@@ -362,18 +381,33 @@ def send_pairing_email(receiver_email, matched_wine, matched_food, rationale_tex
 
 def render_nav(prev_page=None):
     """Renders top navigation header with a perfectly circular back button and centered logo."""
-    
+
     cols = st.columns([1, 8, 1])
+
     with cols[0]:
         if prev_page:
-            if st.button("←", key=f"back_{prev_page}"):
-                move_to(prev_page)
-                
+            with st.container(key="nav_back_button"):
+                if st.button(
+                    "←",
+                    key=f"back_{prev_page}",
+                    width=42
+                ):
+                    move_to(prev_page)
+
     with cols[1]:
-        # Centered brand logo (margin-top을 0으로 강제 고정)
-        st.markdown('<div class="brand-logo" style="margin-bottom:0; margin-top:0; padding-top:0; font-size:2.1rem; text-align:center;">Seoul<br>& Sip</div>', unsafe_allow_html=True)
-        
-    st.markdown("<hr style='margin-top:0.5rem; margin-bottom:1.5rem; border-color:#3d1b34;'>", unsafe_allow_html=True)
+        st.markdown(
+            '<div class="brand-logo" '
+            'style="margin-bottom:0; margin-top:0; padding-top:0; '
+            'font-size:2.1rem; text-align:center;">'
+            'Seoul<br>& Sip</div>',
+            unsafe_allow_html=True
+        )
+
+    st.markdown(
+        "<hr style='margin-top:0.5rem; margin-bottom:1.5rem; "
+        "border-color:#3d1b34;'>",
+        unsafe_allow_html=True
+    )
 # ==========================================
 # 5. Core Matching Logic (Real Filter)
 # ==========================================
