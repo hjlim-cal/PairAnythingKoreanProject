@@ -448,12 +448,6 @@ def render_nav(prev_page=None):
                 unsafe_allow_html=True
             )
 
-    st.markdown(
-        "<hr style='margin-top:0.35rem; "
-        "margin-bottom:1rem; "
-        "border-color:#3d1b34;'>",
-        unsafe_allow_html=True
-    )
 # ==========================================
 # 5. Core Matching Logic (Real Filter)
 # ==========================================
