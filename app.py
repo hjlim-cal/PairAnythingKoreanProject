@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import random
 import base64
@@ -23,6 +24,7 @@ st.markdown("""
     header[data-testid="stHeader"] {
         display: none !important;
     }
+    
 
     /* 2. back button fix to round shape
     div[data-testid="stHorizontalBlock"] div[data-testid="column"]:nth-child(1) div.stButton > button {
@@ -200,6 +202,38 @@ if 'answers' not in st.session_state:
 def move_to(page_name):
     st.session_state.page = page_name
     st.rerun()
+
+def scroll_to_top():
+    components.html(
+        """
+        <script>
+            window.parent.scrollTo({
+                top: 0,
+                left: 0,
+                behavior: "instant"
+            });
+
+            const main = window.parent.document.querySelector(
+                '[data-testid="stAppViewContainer"]'
+            );
+
+            if (main) {
+                main.scrollTo({
+                    top: 0,
+                    left: 0,
+                    behavior: "instant"
+                });
+            }
+
+            const focused = window.parent.document.activeElement;
+            if (focused) {
+                focused.blur();
+            }
+        </script>
+        """,
+        height=0,
+    )
+
 def send_pairing_email(receiver_email, matched_wine, matched_food, rationale_text):
     """Sends a clean burgundy-bordered email matching the app's light theme."""
     sender_email = "heejung.lim11@gmail.com"  
@@ -453,6 +487,7 @@ def render_custom_progress(percent):
 
 
 def render_q1():
+    scroll_to_top()
     render_nav(prev_page='intro')
     render_custom_progress(25) 
     st.markdown("<div class='kicker'>WINE PALATE</div>", unsafe_allow_html=True)
@@ -480,6 +515,7 @@ def render_q1():
             st.toast("⚠️ Please select an option first!")
 
 def render_q2():
+    scroll_to_top()
     render_nav(prev_page='q1')
     render_custom_progress(50) 
     st.markdown("<div class='kicker'>DIETARY NOTE</div>", unsafe_allow_html=True)
@@ -505,6 +541,7 @@ def render_q2():
             st.toast("⚠️ Please select an option first!")
 
 def render_q3():
+    scroll_to_top()
     render_nav(prev_page='q2')
     render_custom_progress(75)
     st.markdown("<div class='kicker'>THE OCCASION</div>", unsafe_allow_html=True)
@@ -530,7 +567,7 @@ def render_q3():
             st.toast("⚠️ Please select an option first!")
 
 def render_q4():
-    # Render back navigation button
+    scroll_to_top()
     render_nav(prev_page='q3')
     
     # Render custom single-layer progress bar (100% for Question 4)
