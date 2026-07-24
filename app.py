@@ -960,7 +960,7 @@ def render_result():
             return default
 
     # Intuitive axis categories for the radar chart
-    categories = ['Acidity (산도)', 'Body & Richness (무게감)', 'Sweetness (단맛)', 'Tannin & Spice (타닌/매운맛)', 'Umami (감칠맛)']
+    categories = ['Acidity', 'Body & Richness', 'Sweetness', 'Tannin & Spice', 'Umami']
 
     # Exact column name matching from CSV files
     wine_stats = [
