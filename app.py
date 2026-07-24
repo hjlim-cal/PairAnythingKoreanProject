@@ -1,5 +1,4 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import pandas as pd
 import random
 import base64
@@ -203,36 +202,6 @@ def move_to(page_name):
     st.session_state.page = page_name
     st.rerun()
 
-def scroll_to_top():
-    components.html(
-        """
-        <script>
-            window.parent.scrollTo({
-                top: 0,
-                left: 0,
-                behavior: "instant"
-            });
-
-            const main = window.parent.document.querySelector(
-                '[data-testid="stAppViewContainer"]'
-            );
-
-            if (main) {
-                main.scrollTo({
-                    top: 0,
-                    left: 0,
-                    behavior: "instant"
-                });
-            }
-
-            const focused = window.parent.document.activeElement;
-            if (focused) {
-                focused.blur();
-            }
-        </script>
-        """,
-        height=0,
-    )
 
 def send_pairing_email(receiver_email, matched_wine, matched_food, rationale_text):
     """Sends a clean burgundy-bordered email matching the app's light theme."""
@@ -315,7 +284,7 @@ def send_pairing_email(receiver_email, matched_wine, matched_food, rationale_tex
                     <td width="4%"></td>
                     <!-- Food Card -->
                     <td width="48%" valign="top" style="background-color: transparent; border: 1.5px solid #6b1f4a; border-radius: 12px; padding: 12px; text-align: center;">
-                        <img src="{food_img_url}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; display: block; margin-bottom: 12px;">
+                        <img src="{cid:food_image}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; display: block; margin-bottom: 12px;">
                         <div style="font-size: 13px; font-weight: bold; color: #111111; margin-bottom: 4px;">{food_en}</div>
                         <div style="font-size: 11px; color: #555555;">{food_kr}</div>
                     </td>
@@ -487,7 +456,6 @@ def render_custom_progress(percent):
 
 
 def render_q1():
-    scroll_to_top()
     render_nav(prev_page='intro')
     render_custom_progress(25) 
     st.markdown("<div class='kicker'>WINE PALATE</div>", unsafe_allow_html=True)
@@ -515,7 +483,7 @@ def render_q1():
             st.toast("⚠️ Please select an option first!")
 
 def render_q2():
-    scroll_to_top()
+
     render_nav(prev_page='q1')
     render_custom_progress(50) 
     st.markdown("<div class='kicker'>DIETARY NOTE</div>", unsafe_allow_html=True)
@@ -541,7 +509,7 @@ def render_q2():
             st.toast("⚠️ Please select an option first!")
 
 def render_q3():
-    scroll_to_top()
+
     render_nav(prev_page='q2')
     render_custom_progress(75)
     st.markdown("<div class='kicker'>THE OCCASION</div>", unsafe_allow_html=True)
@@ -567,7 +535,7 @@ def render_q3():
             st.toast("⚠️ Please select an option first!")
 
 def render_q4():
-    scroll_to_top()
+
     render_nav(prev_page='q3')
     
     # Render custom single-layer progress bar (100% for Question 4)
@@ -831,9 +799,10 @@ def render_result():
 
         html_col2 = f"""<div class="result-card" style="min-height: 380px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 15px; border-radius: 12px; background-color: #1e131d;">
 <div style="width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 15px;">
-<img src="cid:food_image"
-    style="width: 100%; height: 140px; object-fit: cover;
-            border-radius: 8px; display: block; margin-bottom: 12px;">
+<img src="{food_img_src}"
+            style="width: 100%;
+                    object-fit: cover; aspect-ratio: 4/3; display: block;
+                    border-radius: 8px;" />
 </div>
 <div style="text-align: center; margin-top: auto; padding-bottom: 10px;">
 <div style="font-size: 1.1rem; font-weight: bold; color: #FFFFFF;">{food_en}</div>
