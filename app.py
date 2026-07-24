@@ -17,8 +17,8 @@ st.markdown("""
     <style>
     /* 1. remove margin on top */
     .block-container {
-        padding-top: 0.3rem !important;
-        margin-top: 0rem !important;
+        padding-top: 0 !important;
+        margin-top: 0 !important;
     }
     header[data-testid="stHeader"] {
         display: none !important;
@@ -202,6 +202,29 @@ st.markdown("""
         background-color: #a6264f !important;
     }
 
+    /* Quiz options only*/
+    div[class*="st-key-quiz_options_"] div.stButton > button {
+        justify-content: flex-start !important;
+        text-align: left !important;
+    }
+
+    /* Streamlit button label */
+    div[class*="st-key-quiz_options_"]
+    div.stButton > button
+    div[data-testid="stMarkdownContainer"] {
+        width: 100% !important;
+        text-align: left !important;
+    }
+
+    div[class*="st-key-quiz_options_"]
+    div.stButton > button p {
+        width: 100% !important;
+        margin: 0 !important;
+        text-align: left !important;
+        white-space: normal !important;
+        overflow-wrap: break-word !important;
+    }
+
     /* Result Card Placeholder */
     .result-card {
         background-color: #260d20;
@@ -228,8 +251,8 @@ def move_to(page_name):
 
 def send_pairing_email(receiver_email, matched_wine, matched_food, rationale_text):
     """Sends a clean burgundy-bordered email matching the app's light theme."""
-    sender_email = "heejung.lim11@gmail.com"  
-    app_password = "qmfb wbus edjt witv"   
+    sender_email = st.secrets["GMAIL_SENDER"]
+    app_password = st.secrets["GMAIL_APP_PASSWORD"]  
     
     subject = "[Seoul & Sip] Your Personalized K-Food & Wine Pairing Result 🍷"
     
@@ -503,15 +526,16 @@ def render_q1():
     q1_ans = st.session_state.answers.get('q1', None)
     
     # change color darker when selected
-    if st.button("A  🍇  Just starting my wine journey.", type="primary" if q1_ans == 'A' else "secondary", use_container_width=True):
-        st.session_state.answers['q1'] = 'A'
-        st.rerun()
-    if st.button("B  🍷  I know what I like. Keep it classic.", type="primary" if q1_ans == 'B' else "secondary", use_container_width=True):
-        st.session_state.answers['q1'] = 'B'
-        st.rerun()
-    if st.button("C  🗺️  An adventurous enthusiast.", type="primary" if q1_ans == 'C' else "secondary", use_container_width=True):
-        st.session_state.answers['q1'] = 'C'
-        st.rerun()
+    with st.container(key="quiz_options_q1"):
+        if st.button("A  🍇  Just starting my wine journey.", type="primary" if q1_ans == 'A' else "secondary", use_container_width=True):
+            st.session_state.answers['q1'] = 'A'
+            st.rerun()
+        if st.button("B  🍷  I know what I like. Keep it classic.", type="primary" if q1_ans == 'B' else "secondary", use_container_width=True):
+            st.session_state.answers['q1'] = 'B'
+            st.rerun()
+        if st.button("C  🗺️  An adventurous enthusiast.", type="primary" if q1_ans == 'C' else "secondary", use_container_width=True):
+            st.session_state.answers['q1'] = 'C'
+            st.rerun()
         
     st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
     if st.button("CONTINUE", key="next_q1", use_container_width=True):
@@ -528,17 +552,18 @@ def render_q2():
     st.markdown("<div class='question-title'>Any specific dietary preferences for tonight's menu?</div>", unsafe_allow_html=True)
     
     q2_ans = st.session_state.answers.get('q2', None)
-    
-    if st.button("A  🌿  Keep it green. I'm a vegetarian / plant-based.", type="primary" if q2_ans == 'A' else "secondary", use_container_width=True):
-        st.session_state.answers['q2'] = 'A'
-        st.rerun()
-    if st.button("B  🦐  Ocean vibes only. (Pescatarian)", type="primary" if q2_ans == 'B' else "secondary", use_container_width=True):
-        st.session_state.answers['q2'] = 'B'
-        st.rerun()
-    if st.button("C  🥩  I eat everything. Bring on the meat and seafood!", type="primary" if q2_ans == 'C' else "secondary", use_container_width=True):
-        st.session_state.answers['q2'] = 'C'
-        st.rerun()
-        
+
+    with st.container(key="quiz_options_q2"):
+        if st.button("A  🌿  Keep it green. I'm a vegetarian / plant-based.", type="primary" if q2_ans == 'A' else "secondary", use_container_width=True):
+            st.session_state.answers['q2'] = 'A'
+            st.rerun()
+        if st.button("B  🦐  Ocean vibes only. (Pescatarian)", type="primary" if q2_ans == 'B' else "secondary", use_container_width=True):
+            st.session_state.answers['q2'] = 'B'
+            st.rerun()
+        if st.button("C  🥩  I eat everything. Bring on the meat and seafood!", type="primary" if q2_ans == 'C' else "secondary", use_container_width=True):
+            st.session_state.answers['q2'] = 'C'
+            st.rerun()
+            
     st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
     if st.button("CONTINUE", key="next_q2", use_container_width=True):
         if q2_ans:
@@ -554,16 +579,17 @@ def render_q3():
     st.markdown("<div class='question-title'>What's the vibe for tonight's scene?</div>", unsafe_allow_html=True)
     
     q3_ans = st.session_state.answers.get('q3', None)
-    
-    if st.button("A  🎬  A quiet night, a glass of wine, and the lead role in my own film.", type="primary" if q3_ans == 'A' else "secondary", use_container_width=True):
-        st.session_state.answers['q3'] = 'A'
-        st.rerun()
-    if st.button("B  🥂  Gathering with my favorite co-stars for a night to remember.", type="primary" if q3_ans == 'B' else "secondary", use_container_width=True):
-        st.session_state.answers['q3'] = 'B'
-        st.rerun()
-    if st.button("C  🍽️  A blockbuster family feast, where everyone is a main character.", type="primary" if q3_ans == 'C' else "secondary", use_container_width=True):
-        st.session_state.answers['q3'] = 'C'
-        st.rerun()
+
+    with st.container(key="quiz_options_q3"):
+        if st.button("A  🎬  A quiet night, a glass of wine, and the lead role in my own film.", type="primary" if q3_ans == 'A' else "secondary", use_container_width=True):
+            st.session_state.answers['q3'] = 'A'
+            st.rerun()
+        if st.button("B  🥂  Gathering with my favorite co-stars for a night to remember.", type="primary" if q3_ans == 'B' else "secondary", use_container_width=True):
+            st.session_state.answers['q3'] = 'B'
+            st.rerun()
+        if st.button("C  🍽️  A blockbuster family feast, where everyone is a main character.", type="primary" if q3_ans == 'C' else "secondary", use_container_width=True):
+            st.session_state.answers['q3'] = 'C'
+            st.rerun()
         
     st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
     if st.button("CONTINUE", key="next_q3", use_container_width=True):
@@ -587,19 +613,20 @@ def render_q4():
     q4_ans = st.session_state.answers.get('q4', None)
     
     # Option A: Only save answer on click and trigger UI refresh to highlight selection
-    if st.button("A  🍦  Keep it mild. No spice for me, please.", type="primary" if q4_ans == 'A' else "secondary", use_container_width=True):
-        st.session_state.answers['q4'] = 'A'
-        st.rerun()
-        
-    # Option B: Only save answer on click
-    if st.button("B  🌶️  Medium spice. Ready for a little kick.", type="primary" if q4_ans == 'B' else "secondary", use_container_width=True):
-        st.session_state.answers['q4'] = 'B'
-        st.rerun()
-        
-    # Option C: Only save answer on click
-    if st.button("C  🔥  I can handle the heat! Bring on the authentic K-spice.", type="primary" if q4_ans == 'C' else "secondary", use_container_width=True):
-        st.session_state.answers['q4'] = 'C'
-        st.rerun()
+    with st.container(key="quiz_options_q4"):
+        if st.button("A  🍦  Keep it mild. No spice for me, please.", type="primary" if q4_ans == 'A' else "secondary", use_container_width=True):
+            st.session_state.answers['q4'] = 'A'
+            st.rerun()
+            
+        # Option B: Only save answer on click
+        if st.button("B  🌶️  Medium spice. Ready for a little kick.", type="primary" if q4_ans == 'B' else "secondary", use_container_width=True):
+            st.session_state.answers['q4'] = 'B'
+            st.rerun()
+            
+        # Option C: Only save answer on click
+        if st.button("C  🔥  I can handle the heat! Bring on the authentic K-spice.", type="primary" if q4_ans == 'C' else "secondary", use_container_width=True):
+            st.session_state.answers['q4'] = 'C'
+            st.rerun()
 
     # Spacing before CTA landing button
     st.markdown("<div style='height: 30px;'></div>", unsafe_allow_html=True)
