@@ -15,7 +15,7 @@ IMAGE_DIR = APP_DIR / "static" / "images"
 
 st.markdown("""
     <style>
-    /* 1. remove margin on top 
+    /* 1. remove margin on top */
     .block-container {
         padding-top: 1.5rem !important;
         margin-top: 0rem !important;
@@ -25,7 +25,9 @@ st.markdown("""
     }
     
 
-    /* 2. back button fix to round shape
+    /* 2. back button fix to round shape */
+    
+    /* 
     div[data-testid="stHorizontalBlock"] div[data-testid="column"]:nth-child(1) div.stButton > button {
         border-radius: 50% !important;
         width: 42px !important;
@@ -39,6 +41,8 @@ st.markdown("""
         align-items: center !important;
         justify-content: center !important;
     }
+    */
+
     </style>
 """, unsafe_allow_html=True)
 
@@ -284,7 +288,7 @@ def send_pairing_email(receiver_email, matched_wine, matched_food, rationale_tex
                     <td width="4%"></td>
                     <!-- Food Card -->
                     <td width="48%" valign="top" style="background-color: transparent; border: 1.5px solid #6b1f4a; border-radius: 12px; padding: 12px; text-align: center;">
-                        <img src="{cid:food_image}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; display: block; margin-bottom: 12px;">
+                        <img src="cid:food_image" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; display: block; margin-bottom: 12px;">
                         <div style="font-size: 13px; font-weight: bold; color: #111111; margin-bottom: 4px;">{food_en}</div>
                         <div style="font-size: 11px; color: #555555;">{food_kr}</div>
                     </td>
