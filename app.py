@@ -121,7 +121,7 @@ st.markdown("""
     }
     /* Global App Style */
     .stApp {
-        background-color: #1a0515 !important;
+        background-color: #2A0221 !important;
         color: #ffffff !important;
     }
     header, footer, #MainMenu { visibility: hidden; }
@@ -204,6 +204,43 @@ st.markdown("""
         background-color: #a6264f !important;
     }
 
+    /* Continue + See My Pairing buttons only */
+    .st-key-next_q1 button,
+    .st-key-next_q2 button,
+    .st-key-next_q3 button,
+    .st-key-see_pairing button {
+        background-color: #4F3B4B !important;
+        border-color: #4F3B4B !important;
+        color: #FFFFFF !important;
+        text-align: center !important;
+        justify-content: center !important;
+    }
+
+    /* Email My Pairing button only */
+    .st-key-email_my_pairing button {
+        background-color: #8c1c3f !important;
+        border-color: #8c1c3f !important;
+        color: #ffffff !important;
+        text-align: center !important;
+        justify-content: center !important;
+    }
+
+    .st-key-email_my_pairing button:hover {
+        background-color: #a6264f !important;
+        border-color: #a6264f !important;
+        color: #ffffff !important;
+    }
+
+    /* Keep the requested color on hover */
+    .st-key-next_q1 button:hover,
+    .st-key-next_q2 button:hover,
+    .st-key-next_q3 button:hover,
+    .st-key-see_pairing button:hover {
+        background-color: #4F3B4B !important;
+        border-color: #4F3B4B !important;
+        color: #FFFFFF !important;
+    }
+
     /* Quiz options only*/
     div[class*="st-key-quiz_options_"] div.stButton > button {
         justify-content: flex-start !important;
@@ -245,7 +282,7 @@ st.markdown("""
         justify-content: center;
 
         font-family: 'Playfair Display', serif;
-        font-size: 1rem;
+        font-size: 1.45rem;
         font-weight: 600;
         line-height: 1;
 
@@ -275,11 +312,7 @@ def move_to(page_name):
 
 
 def send_pairing_email(receiver_email, matched_wine, matched_food, rationale_text):
-    """Sends a clean burgundy-bordered email matching the app's light theme, including a dynamic Radar Chart."""
-    
-    import urllib.parse
-    import json
-    
+    """Sends a clean burgundy-bordered email matching the app's light theme."""
     sender_email = st.secrets["GMAIL_SENDER"]
     app_password = st.secrets["GMAIL_APP_PASSWORD"]  
     
@@ -302,11 +335,14 @@ def send_pairing_email(receiver_email, matched_wine, matched_food, rationale_tex
     dish_details = matched_food.get('food_description_en', '')
 
     # Food Image URL extraction 
+    # Food image file for email
     food_filename = matched_food.get("image_file")
+
     if pd.isna(food_filename) or not str(food_filename).strip():
         food_filename = matched_food.get("food_image_file")
 
     food_image_path = None
+
     if food_filename is not None and not pd.isna(food_filename):
         food_filename = str(food_filename).strip()
         food_image_path = IMAGE_DIR / food_filename
@@ -324,69 +360,6 @@ def send_pairing_email(receiver_email, matched_wine, matched_food, rationale_tex
     except (ValueError, TypeError):
         wine_type_id = 3
     wine_img_url = wine_type_images.get(wine_type_id, wine_type_images[3])
-
-    # ==========================================
-    # 📊 EMAIL RADAR CHART GENERATION (No Installation Required)
-    # ==========================================
-    def safe_scale(val, default=1.0):
-        try:
-            num = float(val)
-            return min(max(num, 0.0), 5.0)
-        except (ValueError, TypeError):
-            return default
-
-    wine_stats = [
-        safe_scale(matched_wine.get('acidity', 2.0)),               
-        safe_scale(matched_wine.get('light/bold (body)', 2.0)),     
-        safe_scale(matched_wine.get('dry/sweetness', 1.0)),         
-        safe_scale(matched_wine.get('tannins', 2.0)),               
-        1.0  
-    ]
-
-    food_stats = [
-        min(safe_scale(matched_food.get('Acidity', 2.0)) * 1.2, 5.0),               
-        min(safe_scale(matched_food.get('Richness', 2.0)) * 1.2, 5.0),              
-        min(safe_scale(matched_food.get('Sweetness', 1.0)) * 1.2, 5.0),             
-        min(safe_scale(matched_food.get('Spiciness_Heat', 2.0)) * 1.2, 5.0),        
-        min(safe_scale(matched_food.get('Umami', 2.0)) * 1.2, 5.0)                  
-    ]
-
-    # Generate Chart JSON for QuickChart API
-    chart_config = {
-        "type": "radar",
-        "data": {
-            "labels": ["Acidity", "Body/Richness", "Sweetness", "Tannin/Spice", "Umami"],
-            "datasets": [
-                {
-                    "label": "Wine Profile",
-                    "data": wine_stats,
-                    "borderColor": "#AA8EA7",
-                    "backgroundColor": "rgba(170, 142, 167, 0.4)",
-                    "borderWidth": 2
-                },
-                {
-                    "label": "Food Profile",
-                    "data": food_stats,
-                    "borderColor": "#a6324f",
-                    "backgroundColor": "rgba(166, 50, 79, 0.4)",
-                    "borderWidth": 2
-                }
-            ]
-        },
-        "options": {
-            "legend": { "position": "bottom", "labels": { "fontColor": "#ffffff", "fontSize": 12 } },
-            "scale": {
-                "ticks": { "min": 0, "max": 5, "stepSize": 1, "display": False },
-                "pointLabels": { "fontColor": "#ffffff", "fontSize": 11 },
-                "gridLines": { "color": "#3d1b34" },
-                "angleLines": { "color": "#3d1b34" }
-            }
-        }
-    }
-    
-    encoded_config = urllib.parse.quote(json.dumps(chart_config))
-    # background color %231e131d is the exact dark theme hex color from your app
-    chart_img_url = f"https://quickchart.io/chart?w=500&h=400&bkg=%231e131d&c={encoded_config}"
 
     # HTML Email Template
     html_body = f"""
@@ -425,14 +398,6 @@ def send_pairing_email(receiver_email, matched_wine, matched_food, rationale_tex
                     </td>
                 </tr>
             </table>
-
-            <!-- Email Radar Chart Box -->
-            <div style="background-color: #1e131d; border: 1.5px solid #6b1f4a; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 25px;">
-                <div style="font-family: Georgia, serif; font-size: 16px; font-weight: bold; color: #ffffff; margin-bottom: 15px;">
-                    Flavor Profile Match
-                </div>
-                <img src="{chart_img_url}" alt="Radar Chart" style="width: 100%; max-width: 450px; display: block; margin: 0 auto; border-radius: 8px;">
-            </div>
 
             <!-- Rationale Box -->
             <div style="background-color: transparent; border: 1.5px solid #6b1f4a; border-radius: 12px; padding: 20px; color: #111111; font-family: Georgia, serif; font-size: 13px; line-height: 1.6; margin-bottom: 25px;">
@@ -722,7 +687,7 @@ def render_q4():
     st.markdown("<div style='height: 30px;'></div>", unsafe_allow_html=True)
 
     # Landing CTA Button: Only active/visible after an option is selected
-    if st.button("SEE MY PAIRING 🍷", type="primary", use_container_width=True):
+    if st.button("SEE MY PAIRING 🍷",key="see_pairing", type="primary", use_container_width=True):
         if not q4_ans:
             st.warning("Please select an option first!")
         else:
@@ -926,14 +891,24 @@ def render_result():
     col1, col2 = st.columns(2)
     
     with col1:
-        # Wine Card Rendering
-        html_col1 = f"""<div class="result-card" style="min-height: 380px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 15px; border-radius: 12px; background-color: #1e131d;">
+        # 1. Extract URL and apply Google Search fallback logic (same as email)
+        wine_link = matched_wine.get('info_url_x', '#')
+        if pd.isna(wine_link) or str(wine_link).strip() == '' or str(wine_link) == 'nan':
+            # If link is missing, fallback to Google Search with the wine name
+            wine_link = "https://www.google.com/search?q=" + str(wine_name).replace(" ", "+")
+
+        # 2. Wine Card Rendering (Adding the purchase button inside HTML)
+        html_col1 = f"""<div class="result-card" style="min-height: 380px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 15px; border-radius: 12px; background-color: #2A0221;">
 <div style="width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 15px;">
 <img src="{generated_img_url}" style="width: 100%; object-fit: cover; aspect-ratio: 4/3; display: block; border-radius: 8px;" />
 </div>
-<div style="text-align: center; margin-top: auto; padding-bottom: 10px;">
+<div style="text-align: center; margin-top: auto; padding-bottom: 10px; width: 100%;">
 <div style="font-size: 1.1rem; font-weight: 700; color: #FFFFFF; text-transform: uppercase; letter-spacing: 0.5px;">{wine_name}</div>
-<div style="font-size: 0.85rem; font-style: italic; color: #b3a1ab; margin-top: 4px; text-transform: uppercase;">{winery_display}</div>
+<div style="font-size: 0.85rem; font-style: italic; color: #b3a1ab; margin-top: 4px; text-transform: uppercase; margin-bottom: 15px;">{winery_display}</div>
+<!-- View & Buy Wine Button (White background, Dark text) -->
+<a href="{wine_link}" target="_blank" style="display: inline-block; width: 90%; background-color: #FFFFFF; color: #2A0221; padding: 8px 0; border-radius: 6px; font-weight: bold; font-size: 0.85rem; text-decoration: none; letter-spacing: 0.5px; transition: opacity 0.3s;">
+    VIEW & BUY WINE
+</a>
 </div>
 </div>"""
         st.markdown(html_col1, unsafe_allow_html=True)
@@ -955,7 +930,7 @@ def render_result():
             food_img_src = "https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?w=600"
 
         # Food Card Rendering
-        html_col2 = f"""<div class="result-card" style="min-height: 380px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 15px; border-radius: 12px; background-color: #1e131d;">
+        html_col2 = f"""<div class="result-card" style="min-height: 380px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 15px; border-radius: 12px; background-color: #2A0221;">
 <div style="width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 15px;">
 <img src="{food_img_src}"
             style="width: 100%;
@@ -1112,7 +1087,7 @@ def render_result():
     col_btn1, col_btn2 = st.columns(2)
     
     with col_btn1:
-        if st.button("EMAIL MY PAIRING", use_container_width=True):
+        if st.button("EMAIL MY PAIRING", key="email_my_pairing", use_container_width=True):
             show_email_modal()
             
     with col_btn2:
