@@ -8,6 +8,7 @@ from email.mime.multipart import MIMEMultipart
 from pathlib import Path
 import mimetypes
 from email.mime.image import MIMEImage
+import plotly.graph_objects as go
 
 
 APP_DIR = Path(__file__).resolve().parent
@@ -274,7 +275,11 @@ def move_to(page_name):
 
 
 def send_pairing_email(receiver_email, matched_wine, matched_food, rationale_text):
-    """Sends a clean burgundy-bordered email matching the app's light theme."""
+    """Sends a clean burgundy-bordered email matching the app's light theme, including a dynamic Radar Chart."""
+    
+    import urllib.parse
+    import json
+    
     sender_email = st.secrets["GMAIL_SENDER"]
     app_password = st.secrets["GMAIL_APP_PASSWORD"]  
     
@@ -297,14 +302,11 @@ def send_pairing_email(receiver_email, matched_wine, matched_food, rationale_tex
     dish_details = matched_food.get('food_description_en', '')
 
     # Food Image URL extraction 
-    # Food image file for email
     food_filename = matched_food.get("image_file")
-
     if pd.isna(food_filename) or not str(food_filename).strip():
         food_filename = matched_food.get("food_image_file")
 
     food_image_path = None
-
     if food_filename is not None and not pd.isna(food_filename):
         food_filename = str(food_filename).strip()
         food_image_path = IMAGE_DIR / food_filename
@@ -322,6 +324,69 @@ def send_pairing_email(receiver_email, matched_wine, matched_food, rationale_tex
     except (ValueError, TypeError):
         wine_type_id = 3
     wine_img_url = wine_type_images.get(wine_type_id, wine_type_images[3])
+
+    # ==========================================
+    # 📊 EMAIL RADAR CHART GENERATION (No Installation Required)
+    # ==========================================
+    def safe_scale(val, default=1.0):
+        try:
+            num = float(val)
+            return min(max(num, 0.0), 5.0)
+        except (ValueError, TypeError):
+            return default
+
+    wine_stats = [
+        safe_scale(matched_wine.get('acidity', 2.0)),               
+        safe_scale(matched_wine.get('light/bold (body)', 2.0)),     
+        safe_scale(matched_wine.get('dry/sweetness', 1.0)),         
+        safe_scale(matched_wine.get('tannins', 2.0)),               
+        1.0  
+    ]
+
+    food_stats = [
+        min(safe_scale(matched_food.get('Acidity', 2.0)) * 1.2, 5.0),               
+        min(safe_scale(matched_food.get('Richness', 2.0)) * 1.2, 5.0),              
+        min(safe_scale(matched_food.get('Sweetness', 1.0)) * 1.2, 5.0),             
+        min(safe_scale(matched_food.get('Spiciness_Heat', 2.0)) * 1.2, 5.0),        
+        min(safe_scale(matched_food.get('Umami', 2.0)) * 1.2, 5.0)                  
+    ]
+
+    # Generate Chart JSON for QuickChart API
+    chart_config = {
+        "type": "radar",
+        "data": {
+            "labels": ["Acidity", "Body/Richness", "Sweetness", "Tannin/Spice", "Umami"],
+            "datasets": [
+                {
+                    "label": "Wine Profile",
+                    "data": wine_stats,
+                    "borderColor": "#AA8EA7",
+                    "backgroundColor": "rgba(170, 142, 167, 0.4)",
+                    "borderWidth": 2
+                },
+                {
+                    "label": "Food Profile",
+                    "data": food_stats,
+                    "borderColor": "#a6324f",
+                    "backgroundColor": "rgba(166, 50, 79, 0.4)",
+                    "borderWidth": 2
+                }
+            ]
+        },
+        "options": {
+            "legend": { "position": "bottom", "labels": { "fontColor": "#ffffff", "fontSize": 12 } },
+            "scale": {
+                "ticks": { "min": 0, "max": 5, "stepSize": 1, "display": False },
+                "pointLabels": { "fontColor": "#ffffff", "fontSize": 11 },
+                "gridLines": { "color": "#3d1b34" },
+                "angleLines": { "color": "#3d1b34" }
+            }
+        }
+    }
+    
+    encoded_config = urllib.parse.quote(json.dumps(chart_config))
+    # background color %231e131d is the exact dark theme hex color from your app
+    chart_img_url = f"https://quickchart.io/chart?w=500&h=400&bkg=%231e131d&c={encoded_config}"
 
     # HTML Email Template
     html_body = f"""
@@ -360,6 +425,14 @@ def send_pairing_email(receiver_email, matched_wine, matched_food, rationale_tex
                     </td>
                 </tr>
             </table>
+
+            <!-- Email Radar Chart Box -->
+            <div style="background-color: #1e131d; border: 1.5px solid #6b1f4a; border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 25px;">
+                <div style="font-family: Georgia, serif; font-size: 16px; font-weight: bold; color: #ffffff; margin-bottom: 15px;">
+                    Flavor Profile Match
+                </div>
+                <img src="{chart_img_url}" alt="Radar Chart" style="width: 100%; max-width: 450px; display: block; margin: 0 auto; border-radius: 8px;">
+            </div>
 
             <!-- Rationale Box -->
             <div style="background-color: transparent; border: 1.5px solid #6b1f4a; border-radius: 12px; padding: 20px; color: #111111; font-family: Georgia, serif; font-size: 13px; line-height: 1.6; margin-bottom: 25px;">
@@ -641,7 +714,7 @@ def render_q4():
             st.rerun()
             
         # Option C: Only save answer on click
-        if st.button("C  🔥  I can handle the heat! Bring on the authentic K-spice.", type="primary" if q4_ans == 'C' else "secondary", use_container_width=True):
+        if st.button("C  🔥  Bring on the authentic K-spice!", type="primary" if q4_ans == 'C' else "secondary", use_container_width=True):
             st.session_state.answers['q4'] = 'C'
             st.rerun()
 
@@ -748,10 +821,10 @@ def show_email_modal():
     """, unsafe_allow_html=True)
 
     # ---------------------------------------------------------
-    # 🎯 여기서부터 글씨 색상을 다크 버건디(#4E1A3E)로 "강제 고정" 합니다.
+    # 🎯 (#4E1A3E)font color
     # ---------------------------------------------------------
     
-    # 팝업 제목 및 설명 (강제 버건디)
+    
     st.markdown("""
         <div style="text-align: center; padding-top: 0px;">
             <div style="font-family: 'Playfair Display', Georgia, serif; font-size: 2.2rem; font-weight: bold; color: #4E1A3E !important; -webkit-text-fill-color: #4E1A3E !important; line-height: 1.1; margin-bottom: 1.2rem;">
@@ -763,12 +836,12 @@ def show_email_modal():
         </div>
     """, unsafe_allow_html=True)
     
-    # 이메일 입력
+    # enter email
     user_email = st.text_input("EMAIL", placeholder="yourname@email.com", label_visibility="collapsed")
     
     st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
     
-    # 전송 버튼 로직
+    # send button
     if st.button("SEND RESULT", use_container_width=True, type="primary"):
         if user_email:
             st.session_state.email_error = False
@@ -790,7 +863,7 @@ def show_email_modal():
         else:
             st.session_state.email_error = True
             
-    # 에러 메시지 팝업
+    # error message
     if st.session_state.get('email_error', False):
         st.markdown("""
             <div style="background-color: #EFB0DC; color: #4E1A3E; padding: 10px 14px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; margin-top: 10px; margin-bottom: 10px; text-align: left; display: flex; align-items: center; gap: 8px; border: 1px solid #D88CB8;">
@@ -799,7 +872,7 @@ def show_email_modal():
             </div>
         """, unsafe_allow_html=True)
             
-    # 맨 아래 프라이버시 문구 (강제 버건디)
+    # privacy
     st.markdown("""
         <div style="text-align: center; margin-top: 15px; font-size: 0.8rem; color: #4E1A3E !important; -webkit-text-fill-color: #4E1A3E !important;">
             🔒 We respect your privacy.
@@ -817,9 +890,9 @@ def render_result():
         matched_food = st.session_state.matched_food
 
     # Extract details safely
-    wine_name = matched_wine['Wine']
-    food_en = matched_food['food_name_en']
-    food_kr = matched_food['food_name']
+    wine_name = matched_wine.get('Wine', 'Selected Wine')
+    food_en = matched_food.get('food_name_en', 'Korean Dish')
+    food_kr = matched_food.get('food_name', '')
 
     # Store text summary for email delivery function
     st.session_state.pairing_result = f"Wine: {wine_name} | Pairing Dish: {food_en} ({food_kr})"
@@ -835,7 +908,7 @@ def render_result():
         1: "https://images.pexels.com/photos/1123260/pexels-photo-1123260.jpeg?auto=compress&cs=tinysrgb&w=600", 
         2: "https://images.unsplash.com/photo-1558001373-7b93ee48ffa0?auto=format&fit=crop&w=600&q=80", 
         3: "https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?auto=format&fit=crop&w=600&q=80", 
-        4: "https://images.unsplash.com/photo-1613477581402-306fa9dc6b95?q=80&w=774&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+        4: "https://images.unsplash.com/photo-1613477581402-306fa9dc6b95?q=80&w=774&auto=format&fit=crop"
     }
     
     # 2. wine_type mapping to the image
@@ -853,7 +926,7 @@ def render_result():
     col1, col2 = st.columns(2)
     
     with col1:
-        # 🍷 Wine Card Rendering
+        # Wine Card Rendering
         html_col1 = f"""<div class="result-card" style="min-height: 380px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 15px; border-radius: 12px; background-color: #1e131d;">
 <div style="width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 15px;">
 <img src="{generated_img_url}" style="width: 100%; object-fit: cover; aspect-ratio: 4/3; display: block; border-radius: 8px;" />
@@ -866,6 +939,7 @@ def render_result():
         st.markdown(html_col1, unsafe_allow_html=True)
         
     with col2:
+        # Extract food image file
         food_filename = matched_food.get("image_file")
 
         if pd.isna(food_filename) or not str(food_filename).strip():
@@ -876,9 +950,11 @@ def render_result():
         food_img_path = IMAGE_DIR / food_filename
         food_img_src = get_image_base64(food_img_path)
         
+        # Fallback image if local file is missing
         if not food_img_src:
             food_img_src = "https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?w=600"
 
+        # Food Card Rendering
         html_col2 = f"""<div class="result-card" style="min-height: 380px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 15px; border-radius: 12px; background-color: #1e131d;">
 <div style="width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 15px;">
 <img src="{food_img_src}"
@@ -894,46 +970,140 @@ def render_result():
 
         st.markdown(html_col2, unsafe_allow_html=True)
 
-    # 1. Fallback wine_type to 'wine' if numeric or missing
+    # ==========================================
+    # 📊 RADAR CHART VISUALIZATION
+    # ==========================================
+    st.markdown("<div style='height: 30px;'></div>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #FFFFFF; text-align: center; font-family: \"Playfair Display\", serif; font-size: 1.5rem; margin-bottom: 5px;'>Flavor Profile Match</h3>", unsafe_allow_html=True)
+    
+    # Helper function to handle numeric scaling safely (0~5 scale)
+    def safe_scale(val, default=1.0):
+        try:
+            num = float(val)
+            return min(max(num, 0.0), 5.0) # Cap at 5.0 maximum
+        except (ValueError, TypeError):
+            return default
+
+    # Intuitive axis categories for the radar chart
+    categories = ['Acidity (산도)', 'Body & Richness (무게감)', 'Sweetness (단맛)', 'Tannin & Spice (타닌/매운맛)', 'Umami (감칠맛)']
+
+    # Exact column name matching from CSV files
+    wine_stats = [
+        safe_scale(matched_wine.get('acidity', 2.0)),               
+        safe_scale(matched_wine.get('light/bold (body)', 2.0)),     
+        safe_scale(matched_wine.get('dry/sweetness', 1.0)),         
+        safe_scale(matched_wine.get('tannins', 2.0)),               
+        1.0  # Wine has no Umami column, so fix baseline to 1.0
+    ]
+
+    food_stats = [
+        min(safe_scale(matched_food.get('Acidity', 2.0)) * 1.2, 5.0),               
+        min(safe_scale(matched_food.get('Richness', 2.0)) * 1.2, 5.0),              
+        min(safe_scale(matched_food.get('Sweetness', 1.0)) * 1.2, 5.0),             
+        min(safe_scale(matched_food.get('Spiciness_Heat', 2.0)) * 1.2, 5.0),        
+        min(safe_scale(matched_food.get('Umami', 2.0)) * 1.2, 5.0)                  
+    ]
+
+    fig = go.Figure()
+
+    # Wine chart (Light purple/silver theme)
+    fig.add_trace(go.Scatterpolar(
+        r=wine_stats, 
+        theta=categories,
+        fill='toself',
+        name="Wine Profile",
+        line_color='#AA8EA7', 
+        fillcolor='rgba(170, 142, 167, 0.4)'
+    ))
+
+    # Food chart (Bold burgundy/pink theme)
+    fig.add_trace(go.Scatterpolar(
+        r=food_stats,
+        theta=categories,
+        fill='toself',
+        name="Food Profile",
+        line_color='#a6324f', 
+        fillcolor='rgba(166, 50, 79, 0.4)'
+    ))
+
+    # Dark theme chart layout and styling (Range 0-5)
+    fig.update_layout(
+    polar=dict(
+        radialaxis=dict(visible=True, range=[0, 5], color="#8c6b79", gridcolor="#3d1b34", tickfont=dict(size=10)),
+        angularaxis=dict(color="#e6dfde", gridcolor="#3d1b34"),
+        bgcolor='rgba(0,0,0,0)'
+    ),
+    showlegend=True,
+    legend=dict(orientation="h", yanchor="bottom", y=-0.25, xanchor="center", x=0.5, font=dict(color="#ffffff")),
+    paper_bgcolor='rgba(0,0,0,0)', 
+    plot_bgcolor='rgba(0,0,0,0)',
+    margin=dict(l=40, r=40, t=20, b=20)
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    # ==========================================
+    # 📝 RATIONALE TEXT & MATH ANALYSIS
+    # ==========================================
+    
+    # 1. Calculate mathematical similarity (Sum of absolute differences between the two graphs)
+    # Use zip() to find the absolute difference between wine and food scores on each axis, then sum them up
+    total_diff = sum(abs(w - f) for w, f in zip(wine_stats, food_stats))
+    
+    # Set a threshold (If the total difference across 5 axes is less than 5.5, it's congruent; otherwise, contrasting)
+    if total_diff < 5.5:
+        # When the shapes overlap significantly (Congruent Pairing)
+        chart_analysis = (
+            "<strong style='color:#AA8EA7;'>[Congruent Pairing]</strong> As seen by the closely overlapping shapes in the chart, "
+            "this pairing shares a similar flavor trajectory. The harmonious flavor profiles blend together to create a smooth, natural synergy on the palate."
+        )
+    else:
+        # When the shapes diverge (Contrasting Pairing)
+        chart_analysis = (
+            "<strong style='color:#a6324f;'>[Contrasting Pairing]</strong> The diverging points in the chart represent a beautifully complementary balance. "
+            "Whether it's the wine's acidity cutting through the dish's richness, or filling in the flavor gaps, this pairing ensures strong elements complete each other rather than clash."
+        )
+
+    # 2. Existing wine/food description text
     wine_type = str(matched_wine.get('wine_type', 'wine'))
     if wine_type.isdigit() or wine_type == '3' or wine_type == 'nan':
         wine_type = 'wine'
 
-    # 2. Key flavors data
     key_flavors = matched_wine.get('key flavors', '')
     if pd.isna(key_flavors) or key_flavors == '':
         flavor_str = "its beautifully balanced structure"
     else:
         flavor_str = f"its distinct notes of {str(key_flavors).lower()}"
 
-    # 3. Pairing notes analysis
     pairing_notes = matched_wine.get('pairing_notes', '')
     
     if not pd.isna(pairing_notes) and pairing_notes != '':
         if ',' in str(pairing_notes):
             western_dishes = ", ".join([d.strip() for d in str(pairing_notes).split(',')[:3]])
-            rationale_text = (
+            base_rationale = (
                 f"While <b>{wine_name}</b> is traditionally celebrated alongside dishes like {western_dishes}, "
                 f"this {wine_type} reveals a spectacular new dimension when paired with Korean cuisine. "
                 f"The flavor profile, enriched by {flavor_str}, seamlessly bridges the gap to create a beautiful harmony with <b>{food_en}</b>."
             )
         else:
-            rationale_text = f"This pairing shines because this exceptional {wine_type} elevates the dining experience. Specifically, {pairing_notes}"
+            base_rationale = f"This pairing shines because this exceptional {wine_type} elevates the dining experience. Specifically, {pairing_notes}"
     else:
-        rationale_text = (
+        base_rationale = (
             f"This pairing works beautifully because the unique character of <b>{wine_name}</b>, "
             f"driven by {flavor_str}, harmonizes gracefully with the seasoned elements of <b>{food_en}</b>, "
             f"creating a delightful balance on the palate."
         )
 
-    # 4. Streamlit UI Explanation Card
+    # 3. Combine chart analysis text with the base wine description
+    rationale_text = f"{chart_analysis}<br><br>{base_rationale}"
+    
     st.session_state.rationale_text = rationale_text
 
     st.markdown(f"""
         <div style='background-color:#260d20; border: 1px solid #3d1b34; border-radius:12px; padding:1.5rem; font-family:"Lora", serif; font-size:0.95rem; line-height:1.6;'>
         {rationale_text}
         <br><br>
-        <span style='color:#b3a1ab; font-size:0.85rem;'>Dish details: {matched_food['food_description_en']}</span>
+        <span style='color:#b3a1ab; font-size:0.85rem;'>Dish details: {matched_food.get('food_description_en', '')}</span>
         </div>
     """, unsafe_allow_html=True)
     
