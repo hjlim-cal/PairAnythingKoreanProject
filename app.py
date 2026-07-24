@@ -18,6 +18,7 @@ st.markdown("""
     /* 1. remove margin on top */
     .block-container {
         padding-top: 0 !important;
+        padding-bottom: 0 !important;
         margin-top: 0 !important;
     }
     header[data-testid="stHeader"] {
@@ -100,7 +101,7 @@ st.markdown("""
     
     .brand-logo {
         font-family: 'Playfair Display', serif;
-        font-size: 3.6rem;
+        font-size: 3rem;
         line-height: 1.1;
         text-align: center;
         color: rgba(255, 211, 211, 0.6); 
@@ -127,7 +128,7 @@ st.markdown("""
     /* Typography */
     .app-title {
         font-family: 'Playfair Display', serif;
-        font-size: 2.2rem;
+        font-size: 2rem;
         font-weight: 700;
         text-align: center;
         color: #ffffff;
@@ -135,7 +136,7 @@ st.markdown("""
     }
     .question-title {
         font-family: 'Playfair Display', serif;
-        font-size: 1.6rem;
+        font-size: 1.4rem;
         font-weight: 400;
         text-align: left;
         color: #ffffff;
