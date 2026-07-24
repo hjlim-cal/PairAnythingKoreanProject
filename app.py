@@ -6,6 +6,34 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+st.markdown("""
+    <style>
+    /* 1. remove margin on top 
+    .block-container {
+        padding-top: 1.5rem !important;
+        margin-top: 0rem !important;
+    }
+    header[data-testid="stHeader"] {
+        display: none !important;
+    }
+
+    /* 2. back button fix to round shape
+    div[data-testid="stHorizontalBlock"] div[data-testid="column"]:nth-child(1) div.stButton > button {
+        border-radius: 50% !important;
+        width: 42px !important;
+        height: 42px !important;
+        min-width: 42px !important;
+        max-width: 42px !important;
+        min-height: 42px !important;
+        max-height: 42px !important;
+        padding: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # ==========================================
 # 1. Page Configuration
 # ==========================================
@@ -289,36 +317,16 @@ def send_pairing_email(receiver_email, matched_wine, matched_food, rationale_tex
 
 def render_nav(prev_page=None):
     """Renders top navigation header with a perfectly circular back button and centered logo."""
-    # Enforce perfect circle styling for buttons wrapped in .nav-back-btn
-    st.markdown("""
-        <style>
-        .nav-back-btn div.stButton > button {
-            border-radius: 50% !important;
-            width: 42px !important;
-            height: 42px !important;
-            min-width: 42px !important;
-            max-width: 42px !important;
-            min-height: 42px !important;
-            max-height: 42px !important;
-            padding: 0 !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
+    
     cols = st.columns([1, 8, 1])
     with cols[0]:
         if prev_page:
-            st.markdown('<div class="nav-back-btn">', unsafe_allow_html=True)
             if st.button("←", key=f"back_{prev_page}"):
                 move_to(prev_page)
-            st.markdown('</div>', unsafe_allow_html=True)
-            
+                
     with cols[1]:
-        # Centered brand logo
-        st.markdown('<div class="brand-logo" style="margin-bottom:0; font-size:2.1rem;">Seoul<br>& Sip</div>', unsafe_allow_html=True)
+        # Centered brand logo (margin-top을 0으로 강제 고정)
+        st.markdown('<div class="brand-logo" style="margin-bottom:0; margin-top:0; padding-top:0; font-size:2.1rem; text-align:center;">Seoul<br>& Sip</div>', unsafe_allow_html=True)
         
     st.markdown("<hr style='margin-top:0.5rem; margin-bottom:1.5rem; border-color:#3d1b34;'>", unsafe_allow_html=True)
 # ==========================================
@@ -539,37 +547,24 @@ def get_image_base64(image_path):
 # Custom Dialog Modal with Guaranteed Pink Warning Box (#EFB0DC)
 @st.dialog(" ")
 def show_email_modal():
-    """Renders the custom-styled email modal dialog with high-contrast burgundy text."""
+    """Renders the custom-styled email modal with very light gray bg and forced burgundy text."""
     
     st.markdown("""
         <style>
-        /* 1. Modal Dialog Container Background */
-        div[role="dialog"],
-        div[role="dialog"] > div,
-        div[role="dialog"] > div > div,
-        section[data-testid="stDialog"],
-        [data-testid="stModal"],
-        [data-testid="stDialog"] > div {
-            background-color: #EDEDED !important;
-            background: #EDEDED !important;
+        /* 1. 팝업 상자 배경: 아주아주아주 연한 라이트 그레이 (#F7F7F7) */
+        section[data-testid="stDialog"] {
+            background-color: #F7F7F7 !important;
             border-radius: 16px !important;
         }
-
-        /* 2. Force All Text Inside Modal to Dark Burgundy */
-        div[role="dialog"] p, 
-        div[role="dialog"] span, 
-        div[role="dialog"] div,
-        div[role="dialog"] label,
-        div[role="dialog"] h1,
-        div[role="dialog"] h2,
-        div[role="dialog"] h3 {
-            color: #4E1A3E !important;
+        
+        section[data-testid="stDialog"] > div {
+            background-color: #F7F7F7 !important;
         }
 
-        /* 3. Input Widget Styling - Force White BG & Dark Burgundy Text */
-        div[role="dialog"] div[data-baseweb="input"],
-        div[role="dialog"] div[data-baseweb="base-input"],
-        div[role="dialog"] input {
+        /* 2. 이메일 입력창: 흰색 배경 + 버건디 글씨 */
+        section[data-testid="stDialog"] div[data-baseweb="input"],
+        section[data-testid="stDialog"] div[data-baseweb="base-input"],
+        section[data-testid="stDialog"] input {
             background-color: #FFFFFF !important;
             color: #4E1A3E !important;
             border: 1px solid #CCCCCC !important;
@@ -577,41 +572,59 @@ def show_email_modal():
             -webkit-text-fill-color: #4E1A3E !important;
         }
 
-        /* 4. Placeholder Text Color */
-        div[role="dialog"] input::placeholder {
+        section[data-testid="stDialog"] input::placeholder {
             color: #888888 !important;
             -webkit-text-fill-color: #888888 !important;
             opacity: 1 !important;
         }
 
-        /* 5. Close Button (X) Icon Color */
-        div[role="dialog"] button[aria-label="Close"] svg,
-        div[role="dialog"] button[aria-label="Close"] span,
-        div[role="dialog"] button[aria-label="Close"] {
+        /* 3. SEND RESULT 버튼: 버건디 배경 + 순백색 글씨 */
+        section[data-testid="stDialog"] div[data-testid="stButton"] > button {
+            background-color: #6B1F4A !important;
+            border-color: #6B1F4A !important;
+            border-radius: 8px !important;
+        }
+
+        /* 버튼 안의 텍스트는 무조건 하얗게! */
+        section[data-testid="stDialog"] div[data-testid="stButton"] > button * {
+            color: #FFFFFF !important;
+            -webkit-text-fill-color: #FFFFFF !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.5px !important;
+        }
+
+        /* 4. 닫기(X) 버튼 다크 버건디색 */
+        section[data-testid="stDialog"] button[aria-label="Close"] svg,
+        section[data-testid="stDialog"] button[aria-label="Close"] span,
+        section[data-testid="stDialog"] button[aria-label="Close"] {
             color: #4E1A3E !important;
             fill: #4E1A3E !important;
         }
         </style>
     """, unsafe_allow_html=True)
 
-    # Render Modal Title & Subtitle with Inline Burgundy Color
+    # ---------------------------------------------------------
+    # 🎯 여기서부터 글씨 색상을 다크 버건디(#4E1A3E)로 "강제 고정" 합니다.
+    # ---------------------------------------------------------
+    
+    # 팝업 제목 및 설명 (강제 버건디)
     st.markdown("""
         <div style="text-align: center; padding-top: 0px;">
-            <div style="font-family: 'Playfair Display', Georgia, serif; font-size: 2.2rem; font-weight: bold; color: #4E1A3E !important; line-height: 1.1; margin-bottom: 1.2rem;">
+            <div style="font-family: 'Playfair Display', Georgia, serif; font-size: 2.2rem; font-weight: bold; color: #4E1A3E !important; -webkit-text-fill-color: #4E1A3E !important; line-height: 1.1; margin-bottom: 1.2rem;">
                 Seoul<br>&amp; Sip
             </div>
-            <p style="color: #6B3254 !important; font-size: 0.95rem; margin-bottom: 1.5rem; line-height: 1.4;">
+            <p style="color: #4E1A3E !important; -webkit-text-fill-color: #4E1A3E !important; font-size: 0.95rem; margin-bottom: 1.5rem; line-height: 1.4;">
                 Enter your email to get your personalized<br>pairing results.
             </p>
         </div>
     """, unsafe_allow_html=True)
     
-    # Email Input Field
+    # 이메일 입력
     user_email = st.text_input("EMAIL", placeholder="yourname@email.com", label_visibility="collapsed")
     
     st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
     
-    # Track button click inside session state for clean error rendering
+    # 전송 버튼 로직
     if st.button("SEND RESULT", use_container_width=True, type="primary"):
         if user_email:
             st.session_state.email_error = False
@@ -633,18 +646,18 @@ def show_email_modal():
         else:
             st.session_state.email_error = True
             
-    # Display Custom Pink Alert Box if Validation Fails
+    # 에러 메시지 팝업
     if st.session_state.get('email_error', False):
         st.markdown("""
             <div style="background-color: #EFB0DC; color: #4E1A3E; padding: 10px 14px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; margin-top: 10px; margin-bottom: 10px; text-align: left; display: flex; align-items: center; gap: 8px; border: 1px solid #D88CB8;">
-                <span>⚠️</span>
-                <span>Please enter your email address.</span>
+                <span style="color: #4E1A3E !important; -webkit-text-fill-color: #4E1A3E !important;">⚠️</span>
+                <span style="color: #4E1A3E !important; -webkit-text-fill-color: #4E1A3E !important;">Please enter your email address.</span>
             </div>
         """, unsafe_allow_html=True)
             
-    # Privacy Footer
+    # 맨 아래 프라이버시 문구 (강제 버건디)
     st.markdown("""
-        <div style="text-align: center; margin-top: 15px; font-size: 0.8rem; color: #6B3254 !important;">
+        <div style="text-align: center; margin-top: 15px; font-size: 0.8rem; color: #4E1A3E !important; -webkit-text-fill-color: #4E1A3E !important;">
             🔒 We respect your privacy.
         </div>
     """, unsafe_allow_html=True)
@@ -709,12 +722,15 @@ def render_result():
         st.markdown(html_col1, unsafe_allow_html=True)
         
     with col2:
-        # 🍳 Retrieve image filename from CSV and set file path
-        food_filename = matched_food.get('image_file', 'default.png')
-        food_img_path = f"app/static/images/{food_filename}"
+        food_filename = matched_food.get('image_file') or matched_food.get('food_image_file')
+        
+        food_img_path = f"static/images/{food_filename}" # (app 폴더 안이면 app/static/images/{food_filename})
+        
         food_img_src = get_image_base64(food_img_path)
+        
+        if not food_img_src:
+            food_img_src = "https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?w=600"
 
-        # 🍳 Korean Food Card Rendering
         html_col2 = f"""<div class="result-card" style="min-height: 380px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 15px; border-radius: 12px; background-color: #1e131d;">
 <div style="width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 15px;">
 <img src="{food_img_src}" style="width: 100%; object-fit: cover; aspect-ratio: 4/3; display: block; border-radius: 8px;" />
@@ -724,6 +740,7 @@ def render_result():
 <div style="font-size: 0.85rem; color: #b3a1ab; margin-top: 4px;">{food_kr}</div>
 </div>
 </div>"""
+
         st.markdown(html_col2, unsafe_allow_html=True)
 
     # 1. Fallback wine_type to 'wine' if numeric or missing
