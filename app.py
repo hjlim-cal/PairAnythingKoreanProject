@@ -5,6 +5,11 @@ import base64
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from pathlib import Path
+import mimetypes
+
+APP_DIR = Path(__file__).resolve().parent
+IMAGE_DIR = APP_DIR / "static" / "images"
 
 st.markdown("""
     <style>
@@ -534,13 +539,32 @@ def render_q4():
             move_to('result')
 
 def get_image_base64(image_path):
-    """Convert a local image file into a Base64 string for direct HTML rendering."""
+    image_path = Path(image_path)
+
     try:
-        with open(image_path, "rb") as img_file:
-            encoded = base64.b64encode(img_file.read()).decode()
-            return f"data:image/png;base64,{encoded}"
-    except Exception:
-        # Fallback image URL in case the file is missing
+        image_bytes = image_path.read_bytes()
+        mime_type = mimetypes.guess_type(image_path.name)[0] or "image/jpeg"
+        encoded = base64.b64encode(image_bytes).decode("utf-8")
+
+        return f"data:{mime_type};base64,{encoded}"
+
+    except Exception as e:
+        st.error(
+            f"""
+            Image loading failed
+
+            filename: {image_path.name!r}
+
+            requested path: {image_path}
+
+            absolute path: {image_path.resolve()}
+
+            file exists: {image_path.is_file()}
+
+            error: {type(e).__name__}: {e}
+            """
+        )
+
         return "https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=600"
     
 
@@ -722,10 +746,14 @@ def render_result():
         st.markdown(html_col1, unsafe_allow_html=True)
         
     with col2:
-        food_filename = matched_food.get('image_file') or matched_food.get('food_image_file')
-        
-        food_img_path = f"static/images/{food_filename}" # (app 폴더 안이면 app/static/images/{food_filename})
-        
+        food_filename = matched_food.get("image_file")
+
+        if pd.isna(food_filename) or not str(food_filename).strip():
+            food_filename = matched_food.get("food_image_file")
+
+        food_filename = str(food_filename).strip()
+
+        food_img_path = IMAGE_DIR / food_filename
         food_img_src = get_image_base64(food_img_path)
         
         if not food_img_src:
