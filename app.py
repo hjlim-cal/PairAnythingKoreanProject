@@ -7,6 +7,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from pathlib import Path
 import mimetypes
+from email.mime.image import MIMEImage
+
 
 APP_DIR = Path(__file__).resolve().parent
 IMAGE_DIR = APP_DIR / "static" / "images"
@@ -221,10 +223,18 @@ def send_pairing_email(receiver_email, matched_wine, matched_food, rationale_tex
     food_kr = matched_food.get('food_name', '')
     dish_details = matched_food.get('food_description_en', '')
 
-    # Food Image URL extraction (우선순위: food_image_url -> image_url -> 기본 이미지)
-    food_img_url = matched_food.get('food_image_url', matched_food.get('image_url', 'https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?w=600'))
-    if pd.isna(food_img_url) or not str(food_img_url).strip():
-        food_img_url = "https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?w=600"
+    # Food Image URL extraction 
+    # Food image file for email
+    food_filename = matched_food.get("image_file")
+
+    if pd.isna(food_filename) or not str(food_filename).strip():
+        food_filename = matched_food.get("food_image_file")
+
+    food_image_path = None
+
+    if food_filename is not None and not pd.isna(food_filename):
+        food_filename = str(food_filename).strip()
+        food_image_path = IMAGE_DIR / food_filename
 
     # Wine Image URL Logic
     wine_type_images = {
@@ -304,11 +314,34 @@ def send_pairing_email(receiver_email, matched_wine, matched_food, rationale_tex
     </html>
     """
 
-    msg = MIMEMultipart("alternative")
+    msg = MIMEMultipart("related")
     msg["Subject"] = subject
     msg["From"] = f"Seoul & Sip <{sender_email}>"
     msg["To"] = receiver_email
-    msg.attach(MIMEText(html_body, "html"))
+
+    # HTML body
+    html_part = MIMEMultipart("alternative")
+    html_part.attach(MIMEText(html_body, "html"))
+    msg.attach(html_part)
+
+    # Attach the selected food image
+    if food_image_path and food_image_path.is_file():
+        with open(food_image_path, "rb") as image_file:
+            food_image = MIMEImage(image_file.read())
+
+        food_image.add_header("Content-ID", "<food_image>")
+        food_image.add_header(
+            "Content-Disposition",
+            "inline",
+            filename=food_image_path.name
+        )
+
+        msg.attach(food_image)
+    else:
+        print(
+            f"[EMAIL IMAGE ERROR] Food image not found: "
+            f"{food_image_path}"
+        )
 
     try:
         with smtplib.SMTP("smtp.gmail.com", 587) as server:
@@ -761,7 +794,9 @@ def render_result():
 
         html_col2 = f"""<div class="result-card" style="min-height: 380px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 15px; border-radius: 12px; background-color: #1e131d;">
 <div style="width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 15px;">
-<img src="{food_img_src}" style="width: 100%; object-fit: cover; aspect-ratio: 4/3; display: block; border-radius: 8px;" />
+<img src="cid:food_image"
+    style="width: 100%; height: 140px; object-fit: cover;
+            border-radius: 8px; display: block; margin-bottom: 12px;">
 </div>
 <div style="text-align: center; margin-top: auto; padding-bottom: 10px;">
 <div style="font-size: 1.1rem; font-weight: bold; color: #FFFFFF;">{food_en}</div>
