@@ -1,4 +1,4 @@
-# 🍷 Seoul & Sip: K-Food & Wine Pairing Web App
+# 🍷 Seoul & Sip: K-Food & Swiss Wine Pairing Web App
 
 Seoul & Sip is an interactive, data-driven web application developed as an internship project at Pair Anything. The application helps wine lovers discover the ideal wine pairing for authentic Korean dishes based on flavor profiles and personal preferences.
 
