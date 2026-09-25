@@ -352,6 +352,48 @@ a.wine-purchase-link:hover {
 [data-testid="stToast"] p { color: var(--pa-mineshaft) !important; }
 [data-testid="stSpinner"] { color: var(--pa-burgundy) !important; }
 [data-testid="stSpinner"] i { border-right-color: var(--pa-burgundy) !important; }
+
+/* =========================================
+FIX: sticky hover/focus on mobile devices
+   ========================================= */
+
+/* Desktop: allow hover effect normally */
+@media (hover: hover) and (pointer: fine) {
+    div[class*="st-key-quiz_options_"]
+    div.stButton > button[kind="secondary"]:hover {
+        background-color: #EFEFEF !important;
+        border-color: #951901 !important;
+        color: #951901 !important;
+    }
+}
+
+/* Mobile / touch: prevent false "selected" appearance */
+@media (hover: none), (pointer: coarse) {
+    div[class*="st-key-quiz_options_"]
+    div.stButton > button[kind="secondary"]:hover,
+
+    div[class*="st-key-quiz_options_"]
+    div.stButton > button[kind="secondary"]:focus,
+
+    div[class*="st-key-quiz_options_"]
+    div.stButton > button[kind="secondary"]:focus-visible,
+
+    div[class*="st-key-quiz_options_"]
+    div.stButton > button[kind="secondary"]:active {
+        background-color: #FFFFFF !important;
+        border-color: #D7DECE !important;
+        color: #343434 !important;
+        box-shadow: none !important;
+        outline: none !important;
+    }
+
+    div[class*="st-key-quiz_options_"]
+    div.stButton > button {
+        -webkit-tap-highlight-color: transparent !important;
+        touch-action: manipulation;
+    }
+}
+
 </style>
 
 """.replace("/* BRAND_CSS_VARIABLES */", _brand_css_variables), unsafe_allow_html=True)
