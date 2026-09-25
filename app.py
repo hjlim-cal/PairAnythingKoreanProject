@@ -600,103 +600,172 @@ def get_matching_result(answers):
     f_df = food_data.copy()
     w_df = wine_data.copy()
 
-    # --- [1] filter (Spice Tolerance) ---
-    spice = answers.get('q4', 'A')
-    if spice == 'A':   
-        f_df = f_df[f_df['Spiciness_Heat'].astype(str).str.contains('Mild|Low|0|1|2', case=False, na=False)]
-    elif spice == 'B': 
-        f_df = f_df[f_df['Spiciness_Heat'].astype(str).str.contains('Medium|2|3', case=False, na=False)]
-    elif spice == 'C': 
-        f_df = f_df[f_df['Spiciness_Heat'].astype(str).str.contains('Hot|High|Spicy|3|4|5', case=False, na=False)]
+    # ==========================================
+    # 0. Normalize numeric columns
+    # ==========================================
+    food_numeric_cols = [
+        'Spiciness_Heat',
+        'Richness',
+        'Acidity',
+        'Sweetness',
+        'Umami'
+    ]
 
-        # --- [2] Diet filter ---
+    wine_numeric_cols = [
+        'dry/sweetness',
+        'light/bold (body)',
+        'tannins',
+        'acidity'
+    ]
+
+    for col in food_numeric_cols:
+        if col in f_df.columns:
+            f_df[col] = pd.to_numeric(f_df[col], errors='coerce')
+
+    for col in wine_numeric_cols:
+        if col in w_df.columns:
+            w_df[col] = pd.to_numeric(w_df[col], errors='coerce')
+
+    # Helper for CSV True/False columns
+    def bool_mask(df, column_name):
+        if column_name not in df.columns:
+            return pd.Series(False, index=df.index)
+
+        series = df[column_name]
+
+        if pd.api.types.is_bool_dtype(series):
+            return series.fillna(False)
+
+        return (
+            series.astype(str)
+            .str.strip()
+            .str.lower()
+            .eq('true')
+        )
+
+    # ==========================================
+    # 1. DIETARY FILTER
+    #    Hard constraint: never relax this
+    # ==========================================
     diet = answers.get('q2', 'C')
 
-    def apply_diet_filter(df, diet_choice):
-        df = df.copy()
-
-        # Search food name + English name + description together
-        text_cols = [
-            col for col in
-            ['food_name', 'food_name_en', 'food_description_en']
-            if col in df.columns
+    if diet == 'A':
+        # Vegetarian
+        food_pool = f_df[
+            bool_mask(f_df, 'is_vegetarian')
         ]
 
-        food_text = (
-            df[text_cols]
-            .fillna('')
-            .astype(str)
-            .agg(' '.join, axis=1)
-        )
+    elif diet == 'B':
+        # Pescatarian
+        food_pool = f_df[
+            bool_mask(f_df, 'is_pescatarian')
+        ]
 
-        meat_terms = (
-            r'meat|pork|beef|chicken|sausage|blood|ribs|bacon|ham|duck|'
-            r'돼지|제육|소고기|쇠고기|불고기|갈비|닭|치킨|햄|베이컨|순대'
-        )
+    else:
+        # No dietary restriction
+        food_pool = f_df.copy()
 
-        seafood_terms = (
-            r'seafood|fish|squid|octopus|nakji|crab|shrimp|prawn|'
-            r'monkfish|mackerel|beltfish|anchovy|clam|oyster|mussel|'
-            r'eel|tuna|salmon|sea snail'
-            r'낙지|오징어|문어|새우|게|생선|아귀|고등어|갈치|멸치|'
-            r'조개|굴|홍합|장어|참치|연어|골뱅이'
-        )
+    # ==========================================
+    # 2. SPICE TOLERANCE
+    # ==========================================
+    spice = answers.get('q4', 'A')
 
-        if diet_choice == 'A':  # Vegetarian / plant-based
-            blocked_terms = meat_terms + '|' + seafood_terms
+    if spice == 'A':
+        # Mild
+        spice_pool = food_pool[
+            food_pool['Spiciness_Heat'] <= 1.5
+        ]
 
-            return df[
-                ~food_text.str.contains(
-                    blocked_terms,
-                    case=False,
-                    na=False,
-                    regex=True
-                )
-            ]
+    elif spice == 'B':
+        # Medium
+        spice_pool = food_pool[
+            (food_pool['Spiciness_Heat'] > 1.5) &
+            (food_pool['Spiciness_Heat'] < 2.4)
+        ]
 
-        elif diet_choice == 'B':  # Pescatarian
-            no_meat = ~food_text.str.contains(
-                meat_terms,
-                case=False,
-                na=False,
-                regex=True
-            )
+    else:
+        # Hot / authentic K-spice
+        spice_pool = food_pool[
+            food_pool['Spiciness_Heat'] >= 2.4
+        ]
 
-            has_seafood = food_text.str.contains(
-                seafood_terms,
-                case=False,
-                na=False,
-                regex=True
-            )
+    # Diet must remain intact.
+    # Only use the spice filter if matching dishes exist.
+    if not spice_pool.empty:
+        food_pool = spice_pool
 
-            return df[no_meat & has_seafood]
+    # ==========================================
+    # 3. OCCASION / VIBE
+    #    Soft preference
+    # ==========================================
+    vibe = answers.get('q3', 'B')
 
-        return df
+    vibe_column_map = {
+        'A': 'vibe_solo',
+        'B': 'vibe_friends',
+        'C': 'vibe_family'
+    }
 
+    vibe_column = vibe_column_map.get(vibe)
 
-    # Apply dietary preference after spice filter
-    f_df = apply_diet_filter(f_df, diet)
+    if vibe_column and vibe_column in food_pool.columns:
+        vibe_pool = food_pool[
+            bool_mask(food_pool, vibe_column)
+        ]
 
-    # If spice + diet combination gives zero dishes,
-    # relax ONLY the spice restriction — never the dietary preference.
-    if f_df.empty:
-        f_df = apply_diet_filter(food_data.copy(), diet)
+        # Some diet + spice combinations may not have
+        # a dish with the requested vibe.
+        # In that case, keep diet + spice and relax vibe only.
+        if not vibe_pool.empty:
+            food_pool = vibe_pool
 
-    matched_food = f_df.sample(1).iloc[0]
+    # Final food choice
+    matched_food = food_pool.sample(1).iloc[0]
 
-    # --- [3] wine filtering ---
+    # ==========================================
+    # 4. WINE EXPERIENCE LEVEL
+    # ==========================================
     palate = answers.get('q1', 'B')
-    if palate == 'A':   
-        w_df = w_df[w_df['light/bold (body)'].astype(str).str.contains('Light|Medium', case=False, na=False)]
-    elif palate == 'C': 
-        w_df = w_df[w_df['light/bold (body)'].astype(str).str.contains('Bold|Full', case=False, na=False)]
 
+    if palate == 'A':
+        # Beginner:
+        # avoid very full-bodied and highly tannic wines
+        experience_pool = w_df[
+            (w_df['light/bold (body)'] <= 3.0) &
+            (w_df['tannins'] <= 2.5)
+        ]
+
+    elif palate == 'B':
+        # Some experience:
+        # broader range, but still avoid the most intense wines
+        experience_pool = w_df[
+            (w_df['light/bold (body)'] <= 4.0) &
+            (w_df['tannins'] <= 3.5)
+        ]
+
+    else:
+        # Adventurous / experienced:
+        # allow the full wine range
+        experience_pool = w_df.copy()
+
+    if not experience_pool.empty:
+        w_df = experience_pool
+
+    # ==========================================
+    # 5. SPICY-FOOD WINE PREFERENCE
+    # ==========================================
     if spice == 'C':
-        w_df = w_df[w_df['dry/sweetness'].astype(str).str.contains('Off-Dry|Sweet', case=False, na=False)]
+        # For spicy food, prefer wines with at least
+        # some sweetness and avoid very high tannin.
+        spicy_wine_pool = w_df[
+            (w_df['dry/sweetness'] >= 2.0) &
+            (w_df['tannins'] <= 3.0)
+        ]
 
-    if w_df.empty: 
-        w_df = wine_data
+        if not spicy_wine_pool.empty:
+            w_df = spicy_wine_pool
 
+    # Final wine choice
     matched_wine = w_df.sample(1).iloc[0]
 
     return matched_wine, matched_food
@@ -756,13 +825,13 @@ def render_q1():
     
     # change color darker when selected
     with st.container(key="quiz_options_q1"):
-        if st.button("A  🍇  Just starting my wine journey.", type="primary" if q1_ans == 'A' else "secondary", use_container_width=True):
+        if st.button("A  🍇  New to the wine scene. keep it smooth and approachable.", type="primary" if q1_ans == 'A' else "secondary", use_container_width=True):
             st.session_state.answers['q1'] = 'A'
             st.rerun()
-        if st.button("B  🍷  I know what I like. Keep it classic.", type="primary" if q1_ans == 'B' else "secondary", use_container_width=True):
+        if st.button("B  🍷  I've explored a few wines and I'm starting to know what I like.", type="primary" if q1_ans == 'B' else "secondary", use_container_width=True):
             st.session_state.answers['q1'] = 'B'
             st.rerun()
-        if st.button("C  🗺️  An adventurous enthusiast.", type="primary" if q1_ans == 'C' else "secondary", use_container_width=True):
+        if st.button("C  🗺️ Ready to explore. I'm open to something a little more adventurous.", type="primary" if q1_ans == 'C' else "secondary", use_container_width=True):
             st.session_state.answers['q1'] = 'C'
             st.rerun()
         
@@ -783,7 +852,7 @@ def render_q2():
     q2_ans = st.session_state.answers.get('q2', None)
 
     with st.container(key="quiz_options_q2"):
-        if st.button("A  🌿  Keep it green. I'm a vegetarian / plant-based.", type="primary" if q2_ans == 'A' else "secondary", use_container_width=True):
+        if st.button("A  🌿  Keep it green. I'm a vegetarian.", type="primary" if q2_ans == 'A' else "secondary", use_container_width=True):
             st.session_state.answers['q2'] = 'A'
             st.rerun()
         if st.button("B  🦐  Ocean vibes only. (Pescatarian)", type="primary" if q2_ans == 'B' else "secondary", use_container_width=True):
