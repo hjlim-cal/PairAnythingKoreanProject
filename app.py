@@ -14,58 +14,27 @@ import plotly.graph_objects as go
 APP_DIR = Path(__file__).resolve().parent
 IMAGE_DIR = APP_DIR / "static" / "images"
 
-st.markdown("""
-    <style>
-    /* 1. remove margin on top */
-    .block-container {
-        padding-top: 0 !important;
-        padding-bottom: 0 !important;
-        margin-top: 0 !important;
-    }
-    header[data-testid="stHeader"] {
-        display: none !important;
-    }
-    
-
-    /* 2. back button fix to round shape */
-
-    /* circle 42by42 */
-    .st-key-nav_back_button button {
-        width: 42px !important;
-        height: 42px !important;
-        min-width: 42px !important;
-        max-width: 42px !important;
-        min-height: 42px !important;
-        max-height: 42px !important;
-
-        padding: 0 !important;
-        border-radius: 50% !important;
-
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-
-        line-height: 1 !important;
-    }
-
-    /* 
-    div[data-testid="stHorizontalBlock"] div[data-testid="column"]:nth-child(1) div.stButton > button {
-        border-radius: 50% !important;
-        width: 42px !important;
-        height: 42px !important;
-        min-width: 42px !important;
-        max-width: 42px !important;
-        min-height: 42px !important;
-        max-height: 42px !important;
-        padding: 0 !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-    }
-    */
-
-    </style>
-""", unsafe_allow_html=True)
+# PairAnything Brand Guide 2023, page 1.
+# Presentation only: matching, data, image paths, routing and SMTP stay unchanged.
+BRAND_COLORS = {
+    "burgundy": "#951901",
+    "red": "#D0011B",
+    "light_gray": "#EFEFEF",
+    "dark_gray": "#7D7D7D",
+    "white": "#FFFFFF",
+    "mineshaft": "#343434",
+    "sable_beige": "#D7DECE",
+    "bright_orange": "#F4A821",
+    "dark_orange": "#F96331",
+    "contessa": "#BB7668",
+    "gray": "#7E7E7E",
+    "dove_gray": "#646464",
+}
+BRAND_FONT = "Montserrat, Arial, sans-serif"
+_brand_css_variables = "\n".join(
+    f"--pa-{name.replace('_', '-')}: {value};"
+    for name, value in BRAND_COLORS.items()
+)
 
 # ==========================================
 # 1. Page Configuration
@@ -93,211 +62,299 @@ def load_data():
 wine_data, food_data = load_data()
 
 # ==========================================
-# 3. CSS Styling (Figma Design Implementation)
+# 3. CSS Styling (PairAnything Brand Guide 2023)
 # ==========================================
 st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;600&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..700;1,400..700&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&display=swap');
-    
-    .brand-logo {
-        font-family: 'Playfair Display', serif;
-        font-size: 3rem;
-        line-height: 1.1;
-        text-align: center;
-        color: rgba(255, 211, 211, 0.6); 
-        letter-spacing: -0.5px;
-        margin-bottom: 2rem;
-    }
-    
-    .main-title {
-        font-family: 'Bodoni Moda', 'Playfair Display', serif;
-        font-size: 2.2rem;
-        font-weight: 600;
-        text-align: center;
-        color: #FFFFFF;
-        letter-spacing: -0.3px;
-        margin-bottom: 1.5rem;
-    }
-    /* Global App Style */
-    .stApp {
-        background-color: #2A0221 !important;
-        color: #ffffff !important;
-    }
-    header, footer, #MainMenu { visibility: hidden; }
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,700;0,800;1,400;1,700&display=swap');
 
-    /* Typography */
-    .app-title {
-        font-family: 'Playfair Display', serif;
-        font-size: 2rem;
-        font-weight: 700;
-        text-align: center;
-        color: #ffffff;
-        margin-bottom: 2rem;
-    }
-    .question-title {
-        font-family: 'Playfair Display', serif;
-        font-size: 1.4rem;
-        font-weight: 400;
-        text-align: left;
-        color: #ffffff;
-        margin-top: 1rem;
-        margin-bottom: 2rem;
-        line-height: 1.4;
-    }
-    .kicker {
-        font-family: 'Inter', sans-serif;
-        font-size: 0.75rem;
-        font-weight: 600;
-        letter-spacing: 0.15em;
-        text-transform: uppercase;
-        color: #8c6b79;
-        margin-bottom: 0.5rem;
-    }
+:root {
+    /* BRAND_CSS_VARIABLES */
+    --pa-font: 'Montserrat', Arial, sans-serif;
+}
 
-    /* Default Option Button Style */
-    div.stButton > button {
-        background-color: #2a1123 !important;
-        color: #e6dfdec7 !important;
-        border: 1px solid #422039 !important;
-        border-radius: 12px !important;
-        padding: 1rem !important;
-        width: 100% !important;
-        font-family: 'Lora', serif !important;
-        font-size: 1rem !important;
-        text-align: left !important;
-        transition: all 0.2s ease;
-    }
-    div.stButton > button:hover {
-        border-color: #a6324f !important;
-        background-color: #381830 !important;
-        color: #ffffff !important;
-    }
+/* PairAnything Brand Guide 2023, page 1. Keep the existing page geometry. */
+html, body, .stApp {
+    font-family: var(--pa-font);
+    background-color: var(--pa-white) !important;
+    color: var(--pa-mineshaft) !important;
+    color-scheme: light;
+}
+.stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"] {
+    background-color: var(--pa-white) !important;
+    color: var(--pa-mineshaft) !important;
+}
+.block-container {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    margin-top: 0 !important;
+}
+header[data-testid="stHeader"] { display: none !important; }
+header, footer, #MainMenu { visibility: hidden; }
+[data-testid="stMarkdownContainer"], [data-testid="stMarkdownContainer"] p,
+[data-testid="stWidgetLabel"],
+[data-testid="stCaptionContainer"], [data-testid="stText"] {
+    font-family: var(--pa-font);
+}
+[data-testid="stWidgetLabel"], [data-testid="stText"] {
+    color: var(--pa-mineshaft) !important;
+}
+[data-testid="stCaptionContainer"] { color: var(--pa-dove-gray) !important; }
+[data-testid="stMarkdownContainer"] a:not(.wine-purchase-link) {
+    color: var(--pa-burgundy);
+}
+::selection { background: var(--pa-sable-beige); color: var(--pa-mineshaft); }
 
-    /* Clean Custom Progress Bar Styling */
-    .custom-progress-track {
-        width: 100%;
-        background-color: #4E1A3E; /* Dark background bar */
-        border-radius: 10px;
-        height: 8px;
-        overflow: hidden;
-        margin-top: 10px;
-        margin-bottom: 20px;
-    }
+/* Montserrat: ExtraBold headings, Bold subheadings, Regular body text. */
+.brand-logo {
+    font-family: var(--pa-font);
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1.1;
+    text-align: center;
+    color: var(--pa-burgundy);
+    letter-spacing: -0.5px;
+    margin-bottom: 2rem;
+}
+.main-title {
+    font-family: var(--pa-font);
+    font-size: 2.2rem;
+    font-weight: 800;
+    text-align: center;
+    color: var(--pa-mineshaft);
+    letter-spacing: -0.3px;
+    margin-bottom: 1.5rem;
+}
+.app-title {
+    font-family: var(--pa-font);
+    font-size: 2rem;
+    font-weight: 800;
+    text-align: center;
+    color: var(--pa-mineshaft);
+    margin-bottom: 2rem;
+}
+.question-title {
+    font-family: var(--pa-font);
+    font-size: 1.4rem;
+    font-weight: 700;
+    text-align: left;
+    color: var(--pa-mineshaft);
+    margin-top: 1rem;
+    margin-bottom: 2rem;
+    line-height: 1.4;
+}
+.kicker {
+    font-family: var(--pa-font);
+    font-size: 0.75rem;
+    font-weight: 400;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--pa-burgundy);
+    margin-bottom: 0.5rem;
+}
 
-    .custom-progress-fill {
-        height: 100%;
-        background-color: #AA8EA7; /* Light active progress bar */
-        border-radius: 10px;
-        transition: width 0.3s ease-in-out;
-    }
+/* Unselected options and secondary actions. */
+div.stButton > button {
+    background-color: var(--pa-white) !important;
+    color: var(--pa-mineshaft) !important;
+    border: 1px solid var(--pa-sable-beige) !important;
+    border-radius: 12px !important;
+    padding: 1rem !important;
+    width: 100% !important;
+    font-family: var(--pa-font) !important;
+    font-weight: 400 !important;
+    font-size: 1rem !important;
+    text-align: left !important;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+div.stButton > button p {
+    font-family: var(--pa-font) !important;
+    color: inherit !important;
+    font-weight: inherit !important;
+}
+div.stButton > button:hover {
+    border-color: var(--pa-burgundy) !important;
+    background-color: var(--pa-light-gray) !important;
+    color: var(--pa-burgundy) !important;
+}
+div.stButton > button:focus-visible,
+a.wine-purchase-link:focus-visible {
+    outline: 2px solid var(--pa-burgundy) !important;
+    outline-offset: 3px;
+    box-shadow: none !important;
+}
 
-    /* Primary Action Button & Selected Option Highlight */
-    div.stButton > button[kind="primary"] {
-        background-color: #8c1c3f !important;
-        color: #ffffff !important;
-        text-align: center !important;
-        font-weight: bold !important;
-        border: none !important;
-    }
-    div.stButton > button[kind="primary"]:hover {
-        background-color: #a6264f !important;
-    }
+/* Burgundy action buttons; Red is the active/hover accent. */
+div.stButton > button[kind="primary"],
+.st-key-next_q1 button[kind],
+.st-key-next_q2 button[kind],
+.st-key-next_q3 button[kind],
+.st-key-see_pairing button[kind],
+.st-key-email_my_pairing button[kind] {
+    background-color: var(--pa-burgundy) !important;
+    border-color: var(--pa-burgundy) !important;
+    color: var(--pa-white) !important;
+    font-weight: 700 !important;
+    text-align: center !important;
+    justify-content: center !important;
+}
+div.stButton > button[kind="primary"]:hover,
+.st-key-next_q1 button[kind]:hover,
+.st-key-next_q2 button[kind]:hover,
+.st-key-next_q3 button[kind]:hover,
+.st-key-see_pairing button[kind]:hover,
+.st-key-email_my_pairing button[kind]:hover {
+    background-color: var(--pa-red) !important;
+    border-color: var(--pa-red) !important;
+    color: var(--pa-white) !important;
+}
 
-    /* Continue + See My Pairing buttons only */
-    .st-key-next_q1 button,
-    .st-key-next_q2 button,
-    .st-key-next_q3 button,
-    .st-key-see_pairing button {
-        background-color: #4F3B4B !important;
-        border-color: #4F3B4B !important;
-        color: #FFFFFF !important;
-        text-align: center !important;
-        justify-content: center !important;
-    }
+/* Preserve the left alignment of all quiz choices, including selected ones. */
+div[class*="st-key-quiz_options_"] div.stButton > button {
+    justify-content: flex-start !important;
+    text-align: left !important;
+}
+div[class*="st-key-quiz_options_"] div.stButton > button[kind="primary"] {
+    background-color: var(--pa-red) !important;
+    border-color: var(--pa-red) !important;
+    color: var(--pa-white) !important;
+}
+div[class*="st-key-quiz_options_"] div.stButton > button[kind="primary"]:hover {
+    background-color: var(--pa-burgundy) !important;
+    border-color: var(--pa-burgundy) !important;
+}
+div[class*="st-key-quiz_options_"] div.stButton > button div[data-testid="stMarkdownContainer"] {
+    width: 100% !important;
+    text-align: left !important;
+}
+div[class*="st-key-quiz_options_"] div.stButton > button p {
+    width: 100% !important;
+    margin: 0 !important;
+    text-align: left !important;
+    white-space: normal !important;
+    overflow-wrap: break-word !important;
+}
+div.stButton > button:disabled,
+div.stButton > button:disabled:hover {
+    background-color: var(--pa-light-gray) !important;
+    color: var(--pa-dark-gray) !important;
+    border-color: var(--pa-light-gray) !important;
+    cursor: not-allowed;
+}
 
-    /* Email My Pairing button only */
-    .st-key-email_my_pairing button {
-        background-color: #8c1c3f !important;
-        border-color: #8c1c3f !important;
-        color: #ffffff !important;
-        text-align: center !important;
-        justify-content: center !important;
-    }
+/* The original 42 x 42 round back button and centered quiz header. */
+.st-key-nav_back_button div.stButton > button {
+    width: 42px !important;
+    height: 42px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
+    min-height: 42px !important;
+    max-height: 42px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: 1 !important;
+    color: var(--pa-burgundy) !important;
+}
+.nav-logo {
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--pa-font);
+    font-size: 1.45rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--pa-burgundy);
+    text-align: center;
+    margin: 0;
+    padding: 0;
+}
+.st-key-quiz_nav div[data-testid="stHorizontalBlock"] { align-items: center; }
+.custom-progress-track {
+    width: 100%;
+    background-color: var(--pa-light-gray);
+    border-radius: 10px;
+    height: 8px;
+    overflow: hidden;
+    margin-top: 10px;
+    margin-bottom: 20px;
+}
+.custom-progress-fill {
+    height: 100%;
+    background-color: var(--pa-burgundy);
+    border-radius: 10px;
+    transition: width 0.3s ease-in-out;
+}
 
-    .st-key-email_my_pairing button:hover {
-        background-color: #a6264f !important;
-        border-color: #a6264f !important;
-        color: #ffffff !important;
-    }
+/* Cards and the existing in-card purchase link. */
+.result-card {
+    background-color: var(--pa-light-gray);
+    color: var(--pa-mineshaft);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--pa-light-gray);
+    text-align: center;
+}
+a.wine-purchase-link:hover {
+    background-color: var(--pa-red) !important;
+    color: var(--pa-white) !important;
+}
 
-    /* Keep the requested color on hover */
-    .st-key-next_q1 button:hover,
-    .st-key-next_q2 button:hover,
-    .st-key-next_q3 button:hover,
-    .st-key-see_pairing button:hover {
-        background-color: #4F3B4B !important;
-        border-color: #4F3B4B !important;
-        color: #FFFFFF !important;
-    }
+/* Native inputs: keep text legible even if an old dark config is present. */
+[data-testid="stTextInput"] label { color: var(--pa-mineshaft) !important; }
+[data-testid="stTextInput"] div[data-baseweb="input"] {
+    background-color: var(--pa-white) !important;
+    border: 1px solid var(--pa-sable-beige) !important;
+    border-radius: 8px !important;
+}
+[data-testid="stTextInput"] div[data-baseweb="base-input"] {
+    background-color: var(--pa-white) !important;
+}
+[data-testid="stTextInput"] input {
+    background-color: var(--pa-white) !important;
+    color: var(--pa-mineshaft) !important;
+    -webkit-text-fill-color: var(--pa-mineshaft) !important;
+    caret-color: var(--pa-burgundy);
+    font-family: var(--pa-font) !important;
+}
+[data-testid="stTextInput"] input::placeholder {
+    color: var(--pa-dove-gray) !important;
+    -webkit-text-fill-color: var(--pa-dove-gray) !important;
+    opacity: 1 !important;
+}
+[data-testid="stTextInput"] div[data-baseweb="input"]:focus-within {
+    border-color: var(--pa-burgundy) !important;
+    box-shadow: 0 0 0 2px rgba(149, 25, 1, 0.12) !important;
+}
 
-    /* Quiz options only*/
-    div[class*="st-key-quiz_options_"] div.stButton > button {
-        justify-content: flex-start !important;
-        text-align: left !important;
-    }
+/* Brand-colored notifications; keep the original messages and status icons. */
+[data-testid="stAlert"] > div,
+[data-testid="stAlert"] [data-baseweb="notification"] {
+    background-color: var(--pa-light-gray) !important;
+    color: var(--pa-mineshaft) !important;
+    border-left: 3px solid var(--pa-burgundy) !important;
+}
+[data-testid="stAlert"] p,
+[data-testid="stAlert"] [data-testid="stMarkdownContainer"] {
+    color: var(--pa-mineshaft) !important;
+}
+[data-testid="stAlert"] svg { color: var(--pa-burgundy) !important; }
+[data-testid="stToast"] {
+    background-color: var(--pa-white) !important;
+    color: var(--pa-mineshaft) !important;
+    border: 1px solid var(--pa-sable-beige) !important;
+    font-family: var(--pa-font);
+}
+[data-testid="stToast"] p { color: var(--pa-mineshaft) !important; }
+[data-testid="stSpinner"] { color: var(--pa-burgundy) !important; }
+[data-testid="stSpinner"] i { border-right-color: var(--pa-burgundy) !important; }
+</style>
 
-    /* Streamlit button label */
-    div[class*="st-key-quiz_options_"]
-    div.stButton > button
-    div[data-testid="stMarkdownContainer"] {
-        width: 100% !important;
-        text-align: left !important;
-    }
-
-    div[class*="st-key-quiz_options_"]
-    div.stButton > button p {
-        width: 100% !important;
-        margin: 0 !important;
-        text-align: left !important;
-        white-space: normal !important;
-        overflow-wrap: break-word !important;
-    }
-
-    /* Result Card Placeholder */
-    .result-card {
-        background-color: #260d20;
-        border-radius: 12px;
-        padding: 1.5rem;
-        margin-bottom: 1rem;
-        border: 1px solid #3d1b34;
-        text-align: center;
-    }
-    /* Quiz page navigation only */
-    .nav-logo {
-        height: 42px;
-
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        font-family: 'Playfair Display', serif;
-        font-size: 1.45rem;
-        font-weight: 600;
-        line-height: 1;
-
-        color: #ffffff;
-        text-align: center;
-
-        margin: 0;
-        padding: 0;
-    }
-
-    .st-key-quiz_nav div[data-testid="stHorizontalBlock"] {
-        align-items: center;
-    }
-    </style>
-""", unsafe_allow_html=True)
+""".replace("/* BRAND_CSS_VARIABLES */", _brand_css_variables), unsafe_allow_html=True)
 # ==========================================
 # 4. Session State & Routing Logic
 # ==========================================
@@ -361,22 +418,30 @@ def send_pairing_email(receiver_email, matched_wine, matched_food, rationale_tex
         wine_type_id = 3
     wine_img_url = wine_type_images.get(wine_type_id, wine_type_images[3])
 
-    # HTML Email Template
+    # HTML Email Template (Montserrat when supported; Arial fallback)
     html_body = f"""
     <html>
-    <body style="background-color: #f7f7f7; font-family: 'Helvetica Neue', Arial, sans-serif; padding: 30px 10px; margin: 0;">
-        <div style="max-width: 580px; margin: auto; background-color: #ffffff; border-radius: 20px; border: 2px solid #6b1f4a; padding: 40px 30px; box-sizing: border-box;">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="color-scheme" content="light">
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,700;0,800;1,400;1,700&display=swap');
+        </style>
+    </head>
+    <body style="background-color: {BRAND_COLORS['light_gray']}; font-family: {BRAND_FONT}; padding: 30px 10px; margin: 0;">
+        <div style="max-width: 580px; margin: auto; background-color: {BRAND_COLORS['white']}; border-radius: 20px; border: 2px solid {BRAND_COLORS['burgundy']}; padding: 40px 30px; box-sizing: border-box;">
             
             <!-- Logo Header -->
             <div style="text-align: center; margin-bottom: 20px;">
-                <div style="font-family: Georgia, serif; font-size: 32px; font-weight: bold; color: #6b1f4a; line-height: 1.1;">
+                <div style="font-family: {BRAND_FONT}; font-size: 32px; font-weight: 800; color: {BRAND_COLORS['burgundy']}; line-height: 1.1;">
                     Seoul<br>&amp; Sip
                 </div>
             </div>
             
-            <hr style="border: none; border-top: 1px solid #e0e0e0; margin-bottom: 30px;">
+            <hr style="border: none; border-top: 1px solid {BRAND_COLORS['light_gray']}; margin-bottom: 30px;">
             
-            <div style="text-align: center; font-family: Georgia, serif; font-size: 22px; font-weight: bold; color: #111111; margin-bottom: 25px;">
+            <div style="text-align: center; font-family: {BRAND_FONT}; font-size: 22px; font-weight: 800; color: {BRAND_COLORS['mineshaft']}; margin-bottom: 25px;">
                 Your Perfect Pairing
             </div>
 
@@ -384,39 +449,39 @@ def send_pairing_email(receiver_email, matched_wine, matched_food, rationale_tex
             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-bottom: 25px;">
                 <tr>
                     <!-- Wine Card -->
-                    <td width="48%" valign="top" style="background-color: transparent; border: 1.5px solid #6b1f4a; border-radius: 12px; padding: 12px; text-align: center;">
+                    <td width="48%" valign="top" style="background-color: transparent; border: 1.5px solid {BRAND_COLORS['burgundy']}; border-radius: 12px; padding: 12px; text-align: center;">
                         <img src="{wine_img_url}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; display: block; margin-bottom: 12px;">
-                        <div style="font-size: 13px; font-weight: bold; color: #111111; text-transform: uppercase; margin-bottom: 4px;">{wine_name}</div>
-                        <div style="font-size: 11px; font-style: italic; color: #555555; text-transform: uppercase;">{winery_name}</div>
+                        <div style="font-size: 13px; font-weight: bold; color: {BRAND_COLORS['mineshaft']}; text-transform: uppercase; margin-bottom: 4px;">{wine_name}</div>
+                        <div style="font-size: 11px; font-style: italic; color: {BRAND_COLORS['dove_gray']}; text-transform: uppercase;">{winery_name}</div>
                     </td>
                     <td width="4%"></td>
                     <!-- Food Card -->
-                    <td width="48%" valign="top" style="background-color: transparent; border: 1.5px solid #6b1f4a; border-radius: 12px; padding: 12px; text-align: center;">
+                    <td width="48%" valign="top" style="background-color: transparent; border: 1.5px solid {BRAND_COLORS['burgundy']}; border-radius: 12px; padding: 12px; text-align: center;">
                         <img src="cid:food_image" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; display: block; margin-bottom: 12px;">
-                        <div style="font-size: 13px; font-weight: bold; color: #111111; margin-bottom: 4px;">{food_en}</div>
-                        <div style="font-size: 11px; color: #555555;">{food_kr}</div>
+                        <div style="font-size: 13px; font-weight: bold; color: {BRAND_COLORS['mineshaft']}; margin-bottom: 4px;">{food_en}</div>
+                        <div style="font-size: 11px; color: {BRAND_COLORS['dove_gray']};">{food_kr}</div>
                     </td>
                 </tr>
             </table>
 
             <!-- Rationale Box -->
-            <div style="background-color: transparent; border: 1.5px solid #6b1f4a; border-radius: 12px; padding: 20px; color: #111111; font-family: Georgia, serif; font-size: 13px; line-height: 1.6; margin-bottom: 25px;">
+            <div style="background-color: transparent; border: 1.5px solid {BRAND_COLORS['burgundy']}; border-radius: 12px; padding: 20px; color: {BRAND_COLORS['mineshaft']}; font-family: {BRAND_FONT}; font-size: 13px; line-height: 1.6; margin-bottom: 25px;">
                 {rationale_text}
                 <br><br>
-                <span style="color: #555555; font-size: 11px; font-family: Arial, sans-serif;">Dish details: {dish_details}</span>
+                <span style="color: {BRAND_COLORS['dove_gray']}; font-size: 11px; font-family: {BRAND_FONT};">Dish details: {dish_details}</span>
             </div>
 
             <!-- Wine Link CTA Button -->
             <div style="text-align: center; margin-bottom: 35px;">
-                <a href="{wine_link}" target="_blank" style="background-color: #6b1f4a; color: #ffffff; padding: 14px 28px; border-radius: 8px; font-weight: bold; font-size: 14px; text-decoration: none; display: inline-block;">
+                <a href="{wine_link}" target="_blank" style="background-color: {BRAND_COLORS['burgundy']}; color: {BRAND_COLORS['white']}; padding: 14px 28px; border-radius: 8px; font-weight: bold; font-size: 14px; text-decoration: none; display: inline-block;">
                     🍷 VIEW &amp; BUY THIS WINE
                 </a>
             </div>
 
-            <hr style="border: none; border-top: 1px solid #e0e0e0; margin-bottom: 20px;">
+            <hr style="border: none; border-top: 1px solid {BRAND_COLORS['light_gray']}; margin-bottom: 20px;">
 
             <!-- Footer -->
-            <div style="text-align: center; font-size: 12px; color: #777777;">
+            <div style="text-align: center; font-size: 12px; color: {BRAND_COLORS['dove_gray']};">
                 © Pair Anything All rights reserved.
             </div>
             
@@ -544,15 +609,15 @@ def get_matching_result(answers):
 # ==========================================
 
 def render_intro():
-    # Subtle "Seoul & Sip" logo header with opacity styling
+    # Brand-colored "Seoul & Sip" text header
     st.markdown('<div class="brand-logo">Seoul<br>& Sip</div>', unsafe_allow_html=True)
     
-    # Elegant serif main title
+    # Montserrat ExtraBold main title
     st.markdown('<div class="main-title">The Wine Questionnaire</div>', unsafe_allow_html=True)
     
     # Subtitle description text
     st.markdown("""
-        <p style='text-align: center; color: #b3a1ab; font-family: "Lora", serif; font-size: 1rem; line-height: 1.6; margin-bottom: 2.5rem;'>
+        <p style='text-align: center; color: var(--pa-dove-gray); font-family: Montserrat, Arial, sans-serif; font-size: 1rem; line-height: 1.6; margin-bottom: 2.5rem;'>
             Four questions. Endless possibilities.<br>
             Your perfect bottle and Korean pairing wait at the end of the scene.
         </p>
@@ -726,76 +791,70 @@ def get_image_base64(image_path):
         return "https://images.unsplash.com/photo-1498654896293-37aacf113fd9?w=600"
     
 
-# Custom Dialog Modal with Guaranteed Pink Warning Box (#EFB0DC)
+# Brand-styled email dialog with a light-gray validation message
 @st.dialog(" ")
 def show_email_modal():
-    """Renders the custom-styled email modal with very light gray bg and forced burgundy text."""
+    """Renders the white email dialog using the PairAnything palette."""
     
     st.markdown("""
         <style>
-        /* 1. 팝업 상자 배경: 아주아주아주 연한 라이트 그레이 (#F7F7F7) */
-        section[data-testid="stDialog"] {
-            background-color: #F7F7F7 !important;
-            border-radius: 16px !important;
-        }
-        
+        /* Style the dialog panel, not its full-screen overlay. */
+        div[role="dialog"], section[data-testid="stDialog"],
         section[data-testid="stDialog"] > div {
-            background-color: #F7F7F7 !important;
+            background-color: var(--pa-white) !important;
+            color: var(--pa-mineshaft) !important;
+            border-radius: 16px !important;
+            font-family: var(--pa-font) !important;
         }
-
-        /* 2. 이메일 입력창: 흰색 배경 + 버건디 글씨 */
-        section[data-testid="stDialog"] div[data-baseweb="input"],
-        section[data-testid="stDialog"] div[data-baseweb="base-input"],
-        section[data-testid="stDialog"] input {
-            background-color: #FFFFFF !important;
-            color: #4E1A3E !important;
-            border: 1px solid #CCCCCC !important;
-            border-radius: 8px !important;
-            -webkit-text-fill-color: #4E1A3E !important;
+        div[role="dialog"] {
+            border: 1px solid var(--pa-sable-beige) !important;
+            color-scheme: light;
         }
-
-        section[data-testid="stDialog"] input::placeholder {
-            color: #888888 !important;
-            -webkit-text-fill-color: #888888 !important;
-            opacity: 1 !important;
-        }
-
-        /* 3. SEND RESULT 버튼: 버건디 배경 + 순백색 글씨 */
+        div[role="dialog"] div[data-testid="stButton"] > button,
         section[data-testid="stDialog"] div[data-testid="stButton"] > button {
-            background-color: #6B1F4A !important;
-            border-color: #6B1F4A !important;
+            background-color: var(--pa-burgundy) !important;
+            border-color: var(--pa-burgundy) !important;
+            color: var(--pa-white) !important;
             border-radius: 8px !important;
         }
-
-        /* 버튼 안의 텍스트는 무조건 하얗게! */
-        section[data-testid="stDialog"] div[data-testid="stButton"] > button * {
-            color: #FFFFFF !important;
-            -webkit-text-fill-color: #FFFFFF !important;
+        div[role="dialog"] div[data-testid="stButton"] > button:hover,
+        section[data-testid="stDialog"] div[data-testid="stButton"] > button:hover {
+            background-color: var(--pa-red) !important;
+            border-color: var(--pa-red) !important;
+        }
+        div[role="dialog"] div[data-testid="stButton"] > button p,
+        section[data-testid="stDialog"] div[data-testid="stButton"] > button p {
+            color: var(--pa-white) !important;
+            -webkit-text-fill-color: var(--pa-white) !important;
             font-weight: 700 !important;
             letter-spacing: 0.5px !important;
         }
-
-        /* 4. 닫기(X) 버튼 다크 버건디색 */
+        div[role="dialog"] button[aria-label="Close"],
+        div[role="dialog"] button[aria-label="Close"] svg,
+        div[role="dialog"] button[aria-label="Close"] span,
+        section[data-testid="stDialog"] button[aria-label="Close"],
         section[data-testid="stDialog"] button[aria-label="Close"] svg,
-        section[data-testid="stDialog"] button[aria-label="Close"] span,
-        section[data-testid="stDialog"] button[aria-label="Close"] {
-            color: #4E1A3E !important;
-            fill: #4E1A3E !important;
+        section[data-testid="stDialog"] button[aria-label="Close"] span {
+            color: var(--pa-burgundy) !important;
+        }
+        div[role="dialog"] button[aria-label="Close"]:focus-visible {
+            outline: 2px solid var(--pa-burgundy) !important;
+            outline-offset: 2px;
         }
         </style>
     """, unsafe_allow_html=True)
 
     # ---------------------------------------------------------
-    # 🎯 (#4E1A3E)font color
+    # 🎯 (var(--pa-burgundy))font color
     # ---------------------------------------------------------
     
     
     st.markdown("""
         <div style="text-align: center; padding-top: 0px;">
-            <div style="font-family: 'Playfair Display', Georgia, serif; font-size: 2.2rem; font-weight: bold; color: #4E1A3E !important; -webkit-text-fill-color: #4E1A3E !important; line-height: 1.1; margin-bottom: 1.2rem;">
+            <div style="font-family: Montserrat, Arial, sans-serif; font-size: 2.2rem; font-weight: 800; color: var(--pa-burgundy) !important; -webkit-text-fill-color: var(--pa-burgundy) !important; line-height: 1.1; margin-bottom: 1.2rem;">
                 Seoul<br>&amp; Sip
             </div>
-            <p style="color: #4E1A3E !important; -webkit-text-fill-color: #4E1A3E !important; font-size: 0.95rem; margin-bottom: 1.5rem; line-height: 1.4;">
+            <p style="color: var(--pa-burgundy) !important; -webkit-text-fill-color: var(--pa-burgundy) !important; font-size: 0.95rem; margin-bottom: 1.5rem; line-height: 1.4;">
                 Enter your email to get your personalized<br>pairing results.
             </p>
         </div>
@@ -831,15 +890,15 @@ def show_email_modal():
     # error message
     if st.session_state.get('email_error', False):
         st.markdown("""
-            <div style="background-color: #EFB0DC; color: #4E1A3E; padding: 10px 14px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; margin-top: 10px; margin-bottom: 10px; text-align: left; display: flex; align-items: center; gap: 8px; border: 1px solid #D88CB8;">
-                <span style="color: #4E1A3E !important; -webkit-text-fill-color: #4E1A3E !important;">⚠️</span>
-                <span style="color: #4E1A3E !important; -webkit-text-fill-color: #4E1A3E !important;">Please enter your email address.</span>
+            <div style="background-color: var(--pa-light-gray); color: var(--pa-burgundy); padding: 10px 14px; border-radius: 8px; font-size: 0.9rem; font-weight: 700; margin-top: 10px; margin-bottom: 10px; text-align: left; display: flex; align-items: center; gap: 8px; border: 1px solid var(--pa-red);">
+                <span style="color: var(--pa-burgundy) !important; -webkit-text-fill-color: var(--pa-burgundy) !important;">⚠️</span>
+                <span style="color: var(--pa-burgundy) !important; -webkit-text-fill-color: var(--pa-burgundy) !important;">Please enter your email address.</span>
             </div>
         """, unsafe_allow_html=True)
             
     # privacy
     st.markdown("""
-        <div style="text-align: center; margin-top: 15px; font-size: 0.8rem; color: #4E1A3E !important; -webkit-text-fill-color: #4E1A3E !important;">
+        <div style="text-align: center; margin-top: 15px; font-size: 0.8rem; color: var(--pa-burgundy) !important; -webkit-text-fill-color: var(--pa-burgundy) !important;">
             🔒 We respect your privacy.
         </div>
     """, unsafe_allow_html=True)
@@ -862,10 +921,10 @@ def render_result():
     # Store text summary for email delivery function
     st.session_state.pairing_result = f"Wine: {wine_name} | Pairing Dish: {food_en} ({food_kr})"
 
-    # Subtle "Seoul & Sip" logo header
+    # Brand-colored "Seoul & Sip" text header
     st.markdown('<div class="brand-logo">Seoul<br>& Sip</div>', unsafe_allow_html=True)
     
-    # Elegant serif main title
+    # Montserrat ExtraBold main title
     st.markdown('<div class="main-title">Your Perfect Pairing</div>', unsafe_allow_html=True)
     
     # 1. Types of wine images
@@ -898,15 +957,15 @@ def render_result():
             wine_link = "https://www.google.com/search?q=" + str(wine_name).replace(" ", "+")
 
         # 2. Wine Card Rendering (Adding the purchase button inside HTML)
-        html_col1 = f"""<div class="result-card" style="min-height: 380px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 15px; border-radius: 12px; background-color: #2A0221;">
+        html_col1 = f"""<div class="result-card" style="min-height: 380px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 15px; border-radius: 12px; background-color: var(--pa-light-gray);">
 <div style="width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 15px;">
 <img src="{generated_img_url}" style="width: 100%; object-fit: cover; aspect-ratio: 4/3; display: block; border-radius: 8px;" />
 </div>
 <div style="text-align: center; margin-top: auto; padding-bottom: 10px; width: 100%;">
-<div style="font-size: 1.1rem; font-weight: 700; color: #FFFFFF; text-transform: uppercase; letter-spacing: 0.5px;">{wine_name}</div>
-<div style="font-size: 0.85rem; font-style: italic; color: #b3a1ab; margin-top: 4px; text-transform: uppercase; margin-bottom: 15px;">{winery_display}</div>
-<!-- View & Buy Wine Button (White background, Dark text) -->
-<a href="{wine_link}" target="_blank" style="display: inline-block; width: 90%; background-color: #FFFFFF; color: #2A0221; padding: 8px 0; border-radius: 6px; font-weight: bold; font-size: 0.85rem; text-decoration: none; letter-spacing: 0.5px; transition: opacity 0.3s;">
+<div style="font-size: 1.1rem; font-weight: 700; color: var(--pa-mineshaft); text-transform: uppercase; letter-spacing: 0.5px;">{wine_name}</div>
+<div style="font-size: 0.85rem; font-style: italic; color: var(--pa-dove-gray); margin-top: 4px; text-transform: uppercase; margin-bottom: 15px;">{winery_display}</div>
+<!-- View & Buy Wine Button (Burgundy background, White text) -->
+<a class="wine-purchase-link" href="{wine_link}" target="_blank" style="display: inline-block; width: 90%; background-color: var(--pa-burgundy); color: var(--pa-white); padding: 8px 0; border-radius: 6px; font-weight: bold; font-size: 0.85rem; text-decoration: none; letter-spacing: 0.5px; transition: opacity 0.3s;">
     VIEW & BUY WINE
 </a>
 </div>
@@ -930,7 +989,7 @@ def render_result():
             food_img_src = "https://images.unsplash.com/photo-1541696432-82c6da8ce7bf?w=600"
 
         # Food Card Rendering
-        html_col2 = f"""<div class="result-card" style="min-height: 380px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 15px; border-radius: 12px; background-color: #2A0221;">
+        html_col2 = f"""<div class="result-card" style="min-height: 380px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 15px; border-radius: 12px; background-color: var(--pa-light-gray);">
 <div style="width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 15px;">
 <img src="{food_img_src}"
             style="width: 100%;
@@ -938,8 +997,8 @@ def render_result():
                     border-radius: 8px;" />
 </div>
 <div style="text-align: center; margin-top: auto; padding-bottom: 10px;">
-<div style="font-size: 1.1rem; font-weight: bold; color: #FFFFFF;">{food_en}</div>
-<div style="font-size: 0.85rem; color: #b3a1ab; margin-top: 4px;">{food_kr}</div>
+<div style="font-size: 1.1rem; font-weight: bold; color: var(--pa-mineshaft);">{food_en}</div>
+<div style="font-size: 0.85rem; color: var(--pa-dove-gray); margin-top: 4px;">{food_kr}</div>
 </div>
 </div>"""
 
@@ -949,7 +1008,7 @@ def render_result():
     # 📊 RADAR CHART VISUALIZATION
     # ==========================================
     st.markdown("<div style='height: 30px;'></div>", unsafe_allow_html=True)
-    st.markdown("<h3 style='color: #FFFFFF; text-align: center; font-family: \"Playfair Display\", serif; font-size: 1.5rem; margin-bottom: 5px;'>Flavor Profile Match</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: var(--pa-mineshaft); text-align: center; font-family: Montserrat, Arial, sans-serif; font-size: 1.5rem; font-weight: 700; margin-bottom: 5px;'>Flavor Profile Match</h3>", unsafe_allow_html=True)
     
     # Helper function to handle numeric scaling safely (0~5 scale)
     def safe_scale(val, default=1.0):
@@ -981,41 +1040,68 @@ def render_result():
 
     fig = go.Figure()
 
-    # Wine chart (Light purple/silver theme)
+    # Brand-colored series. Dash/marker differences keep them distinguishable.
+    # The original data arrays, axes and 0-5 scale are unchanged.
     fig.add_trace(go.Scatterpolar(
-        r=wine_stats, 
+        r=wine_stats,
         theta=categories,
         fill='toself',
         name="Wine Profile",
-        line_color='#AA8EA7', 
-        fillcolor='rgba(170, 142, 167, 0.4)'
+        mode="lines+markers",
+        line_color=BRAND_COLORS["burgundy"],
+        line=dict(width=2.5),
+        marker=dict(size=5, symbol="circle"),
+        fillcolor='rgba(149, 25, 1, 0.12)'
     ))
 
-    # Food chart (Bold burgundy/pink theme)
     fig.add_trace(go.Scatterpolar(
         r=food_stats,
         theta=categories,
         fill='toself',
         name="Food Profile",
-        line_color='#a6324f', 
-        fillcolor='rgba(166, 50, 79, 0.4)'
+        mode="lines+markers",
+        line_color=BRAND_COLORS["red"],
+        line=dict(width=2.5, dash="dot"),
+        marker=dict(size=5, symbol="diamond"),
+        fillcolor='rgba(208, 1, 27, 0.09)'
     ))
 
-    # Dark theme chart layout and styling (Range 0-5)
     fig.update_layout(
-    polar=dict(
-        radialaxis=dict(visible=True, range=[0, 5], color="#8c6b79", gridcolor="#3d1b34", tickfont=dict(size=10)),
-        angularaxis=dict(color="#e6dfde", gridcolor="#3d1b34"),
-        bgcolor='rgba(0,0,0,0)'
-    ),
-    showlegend=True,
-    legend=dict(orientation="h", yanchor="bottom", y=-0.25, xanchor="center", x=0.5, font=dict(color="#ffffff")),
-    paper_bgcolor='rgba(0,0,0,0)', 
-    plot_bgcolor='rgba(0,0,0,0)',
-    margin=dict(l=40, r=40, t=20, b=20)
+        template="plotly_white",
+        font=dict(family=BRAND_FONT, color=BRAND_COLORS["mineshaft"]),
+        polar=dict(
+            radialaxis=dict(
+                visible=True,
+                range=[0, 5],
+                color=BRAND_COLORS["dove_gray"],
+                gridcolor=BRAND_COLORS["sable_beige"],
+                linecolor=BRAND_COLORS["light_gray"],
+                tickfont=dict(size=10)
+            ),
+            angularaxis=dict(
+                color=BRAND_COLORS["mineshaft"],
+                gridcolor=BRAND_COLORS["sable_beige"],
+                linecolor=BRAND_COLORS["light_gray"]
+            ),
+            bgcolor=BRAND_COLORS["white"]
+        ),
+        showlegend=True,
+        legend=dict(
+            orientation="h", yanchor="bottom", y=-0.25,
+            xanchor="center", x=0.5,
+            font=dict(family=BRAND_FONT, color=BRAND_COLORS["mineshaft"])
+        ),
+        paper_bgcolor=BRAND_COLORS["white"],
+        plot_bgcolor=BRAND_COLORS["white"],
+        hoverlabel=dict(
+            bgcolor=BRAND_COLORS["white"],
+            font=dict(family=BRAND_FONT, color=BRAND_COLORS["mineshaft"])
+        ),
+        margin=dict(l=40, r=40, t=20, b=20)
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    # Keep Streamlit's default chart theme from replacing the brand styling.
+    st.plotly_chart(fig, use_container_width=True, theme=None)
 
     # ==========================================
     # 📝 RATIONALE TEXT & MATH ANALYSIS
@@ -1029,13 +1115,13 @@ def render_result():
     if total_diff < 5.5:
         # When the shapes overlap significantly (Congruent Pairing)
         chart_analysis = (
-            "<strong style='color:#AA8EA7;'>[Congruent Pairing]</strong> As seen by the closely overlapping shapes in the chart, "
+            f"<strong style='color:{BRAND_COLORS['burgundy']};'>[Congruent Pairing]</strong> As seen by the closely overlapping shapes in the chart, "
             "this pairing shares a similar flavor trajectory. The harmonious flavor profiles blend together to create a smooth, natural synergy on the palate."
         )
     else:
         # When the shapes diverge (Contrasting Pairing)
         chart_analysis = (
-            "<strong style='color:#a6324f;'>[Contrasting Pairing]</strong> The diverging points in the chart represent a beautifully complementary balance. "
+            f"<strong style='color:{BRAND_COLORS['red']};'>[Contrasting Pairing]</strong> The diverging points in the chart represent a beautifully complementary balance. "
             "Whether it's the wine's acidity cutting through the dish's richness, or filling in the flavor gaps, this pairing ensures strong elements complete each other rather than clash."
         )
 
@@ -1075,10 +1161,10 @@ def render_result():
     st.session_state.rationale_text = rationale_text
 
     st.markdown(f"""
-        <div style='background-color:#260d20; border: 1px solid #3d1b34; border-radius:12px; padding:1.5rem; font-family:"Lora", serif; font-size:0.95rem; line-height:1.6;'>
+        <div style='background-color:var(--pa-light-gray); color:var(--pa-mineshaft); border: 1px solid var(--pa-sable-beige); border-radius:12px; padding:1.5rem; font-family:Montserrat, Arial, sans-serif; font-size:0.95rem; line-height:1.6;'>
         {rationale_text}
         <br><br>
-        <span style='color:#b3a1ab; font-size:0.85rem;'>Dish details: {matched_food.get('food_description_en', '')}</span>
+        <span style='color:var(--pa-dove-gray); font-size:0.85rem;'>Dish details: {matched_food.get('food_description_en', '')}</span>
         </div>
     """, unsafe_allow_html=True)
     
