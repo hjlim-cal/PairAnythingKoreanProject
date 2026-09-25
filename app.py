@@ -609,23 +609,78 @@ def get_matching_result(answers):
     elif spice == 'C': 
         f_df = f_df[f_df['Spiciness_Heat'].astype(str).str.contains('Hot|High|Spicy|3|4|5', case=False, na=False)]
 
-    # --- [2] Diet filter (block Ocean vibes only) ---
+        # --- [2] Diet filter ---
     diet = answers.get('q2', 'C')
-    if diet == 'A': # Vegetarian  
-        f_df = f_df[~f_df['food_description_en'].astype(str).str.contains('meat|pork|beef|chicken|seafood|fish|sausage|blood', case=False, na=False)]
-    
-    elif diet == 'B': # Pescatarian (Ocean vibes only)
-        # 1. no meats (no sausage, blood, pork, beef, chicken, meat )
-        f_df = f_df[~f_df['food_description_en'].astype(str).str.contains('meat|pork|beef|chicken|sausage|blood|ribs', case=False, na=False)]
-        # 2. must contain seafood (octopus, agujjim etc)
-        seafood_matches = f_df['food_description_en'].astype(str).str.contains('seafood|fish|squid|octopus|crab|shrimp|monkfish|mackerel|beltfish', case=False, na=False)
-        
-        # Apply seafood filtering if matching items exist; fallback to full dataset if empty to prevent zero results
-        if seafood_matches.any():
-            f_df = f_df[seafood_matches]
 
-    if f_df.empty: 
-        f_df = food_data
+    def apply_diet_filter(df, diet_choice):
+        df = df.copy()
+
+        # Search food name + English name + description together
+        text_cols = [
+            col for col in
+            ['food_name', 'food_name_en', 'food_description_en']
+            if col in df.columns
+        ]
+
+        food_text = (
+            df[text_cols]
+            .fillna('')
+            .astype(str)
+            .agg(' '.join, axis=1)
+        )
+
+        meat_terms = (
+            r'meat|pork|beef|chicken|sausage|blood|ribs|bacon|ham|duck|'
+            r'돼지|제육|소고기|쇠고기|불고기|갈비|닭|치킨|햄|베이컨|순대'
+        )
+
+        seafood_terms = (
+            r'seafood|fish|squid|octopus|nakji|crab|shrimp|prawn|'
+            r'monkfish|mackerel|beltfish|anchovy|clam|oyster|mussel|'
+            r'eel|tuna|salmon|'
+            r'낙지|오징어|문어|새우|게|생선|아귀|고등어|갈치|멸치|'
+            r'조개|굴|홍합|장어|참치|연어'
+        )
+
+        if diet_choice == 'A':  # Vegetarian / plant-based
+            blocked_terms = meat_terms + '|' + seafood_terms
+
+            return df[
+                ~food_text.str.contains(
+                    blocked_terms,
+                    case=False,
+                    na=False,
+                    regex=True
+                )
+            ]
+
+        elif diet_choice == 'B':  # Pescatarian
+            no_meat = ~food_text.str.contains(
+                meat_terms,
+                case=False,
+                na=False,
+                regex=True
+            )
+
+            has_seafood = food_text.str.contains(
+                seafood_terms,
+                case=False,
+                na=False,
+                regex=True
+            )
+
+            return df[no_meat & has_seafood]
+
+        return df
+
+
+    # Apply dietary preference after spice filter
+    f_df = apply_diet_filter(f_df, diet)
+
+    # If spice + diet combination gives zero dishes,
+    # relax ONLY the spice restriction — never the dietary preference.
+    if f_df.empty:
+        f_df = apply_diet_filter(food_data.copy(), diet)
 
     matched_food = f_df.sample(1).iloc[0]
 
