@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import random
 import base64
 import smtplib
 from email.mime.text import MIMEText
@@ -650,11 +649,12 @@ def get_matching_result(answers):
     # 0. Normalize numeric columns
     # ==========================================
     food_numeric_cols = [
-        'Spiciness_Heat',
-        'Richness',
-        'Acidity',
         'Sweetness',
-        'Umami'
+        'Acidity',
+        'Saltiness',
+        'Umami',
+        'Spiciness_Heat',
+        'Richness'
     ]
 
     wine_numeric_cols = [
@@ -672,7 +672,14 @@ def get_matching_result(answers):
         if col in w_df.columns:
             w_df[col] = pd.to_numeric(w_df[col], errors='coerce')
 
-    # Helper for CSV True/False columns
+    # Keep full datasets as references for 0–1 normalization.
+    # This keeps scoring consistent even after filtering.
+    food_reference = f_df.copy()
+    wine_reference = w_df.copy()
+
+    # ==========================================
+    # Helper: True / False CSV columns
+    # ==========================================
     def bool_mask(df, column_name):
         if column_name not in df.columns:
             return pd.Series(False, index=df.index)
@@ -691,7 +698,7 @@ def get_matching_result(answers):
 
     # ==========================================
     # 1. DIETARY FILTER
-    #    Hard constraint: never relax this
+    #    Hard constraint — never relax
     # ==========================================
     diet = answers.get('q2', 'C')
 
@@ -702,9 +709,16 @@ def get_matching_result(answers):
         ]
 
     elif diet == 'B':
-        # Pescatarian
+        # "Ocean vibes only" — actual seafood dishes
         food_pool = f_df[
-            bool_mask(f_df, 'is_pescatarian')
+            bool_mask(f_df, 'is_pescatarian') &
+            (
+                f_df['protein_type']
+                .astype(str)
+                .str.strip()
+                .str.lower()
+                .eq('seafood')
+            )
         ]
 
     else:
@@ -742,8 +756,8 @@ def get_matching_result(answers):
             food_pool['Spiciness_Heat'] >= 2.25
         ]
 
-    # Diet must remain intact.
-    # Only use the spice filter if matching dishes exist.
+    # If the exact spice category has no candidate,
+    # relax spice only — dietary restriction stays intact.
     if not spice_pool.empty:
         food_pool = spice_pool
 
@@ -766,14 +780,9 @@ def get_matching_result(answers):
             bool_mask(food_pool, vibe_column)
         ]
 
-        # Some diet + spice combinations may not have
-        # a dish with the requested vibe.
-        # In that case, keep diet + spice and relax vibe only.
+        # Relax vibe only if no exact match exists.
         if not vibe_pool.empty:
             food_pool = vibe_pool
-
-    # Final food choice
-    matched_food = food_pool.sample(1).iloc[0]
 
     # ==========================================
     # 4. WINE EXPERIENCE LEVEL
@@ -790,26 +799,23 @@ def get_matching_result(answers):
 
     elif palate == 'B':
         # Some experience:
-        # broader range, but still avoid the most intense wines
+        # broader range but avoid the most intense wines
         experience_pool = w_df[
             (w_df['light/bold (body)'] <= 4.0) &
             (w_df['tannins'] <= 3.5)
         ]
 
     else:
-        # Adventurous / experienced:
-        # allow the full wine range
+        # Adventurous / experienced
         experience_pool = w_df.copy()
 
     if not experience_pool.empty:
         w_df = experience_pool
 
     # ==========================================
-    # 5. SPICY-FOOD WINE PREFERENCE
+    # 5. EXTRA FILTER FOR HOT FOOD
     # ==========================================
     if spice == 'C':
-        # For spicy food, prefer wines with at least
-        # some sweetness and avoid very high tannin.
         spicy_wine_pool = w_df[
             (w_df['dry/sweetness'] >= 2.0) &
             (w_df['tannins'] <= 3.0)
@@ -818,10 +824,229 @@ def get_matching_result(answers):
         if not spicy_wine_pool.empty:
             w_df = spicy_wine_pool
 
-    # Final wine choice
-    matched_wine = w_df.sample(1).iloc[0]
+    # ==========================================
+    # 6. PAIRING SCORE HELPERS
+    # ==========================================
+    def normalize_value(value, reference_series):
+        reference_series = pd.to_numeric(
+            reference_series,
+            errors='coerce'
+        )
 
-    return matched_wine, matched_food
+        min_val = reference_series.min()
+        max_val = reference_series.max()
+
+        if (
+            pd.isna(value) or
+            pd.isna(min_val) or
+            pd.isna(max_val) or
+            max_val == min_val
+        ):
+            return 0.5
+
+        normalized = (
+            (float(value) - min_val) /
+            (max_val - min_val)
+        )
+
+        return max(0.0, min(1.0, normalized))
+
+    def clamp(value):
+        return max(0.0, min(1.0, value))
+
+    # ==========================================
+    # 7. FOOD × WINE PAIRING SCORE
+    # ==========================================
+    def calculate_pairing_score(food, wine):
+
+        # ---------- Food ----------
+        food_richness = normalize_value(
+            food.get('Richness'),
+            food_reference['Richness']
+        )
+
+        food_acidity = normalize_value(
+            food.get('Acidity'),
+            food_reference['Acidity']
+        )
+
+        food_sweetness = normalize_value(
+            food.get('Sweetness'),
+            food_reference['Sweetness']
+        )
+
+        food_spice = normalize_value(
+            food.get('Spiciness_Heat'),
+            food_reference['Spiciness_Heat']
+        )
+
+        food_umami = normalize_value(
+            food.get('Umami'),
+            food_reference['Umami']
+        )
+
+        food_saltiness = normalize_value(
+            food.get('Saltiness'),
+            food_reference['Saltiness']
+        )
+
+        # ---------- Wine ----------
+        wine_body = normalize_value(
+            wine.get('light/bold (body)'),
+            wine_reference['light/bold (body)']
+        )
+
+        wine_acidity = normalize_value(
+            wine.get('acidity'),
+            wine_reference['acidity']
+        )
+
+        wine_sweetness = normalize_value(
+            wine.get('dry/sweetness'),
+            wine_reference['dry/sweetness']
+        )
+
+        wine_tannin = normalize_value(
+            wine.get('tannins'),
+            wine_reference['tannins']
+        )
+
+        # ======================================
+        # A. BODY ↔ RICHNESS
+        # 30 points
+        # ======================================
+        body_score = clamp(
+            1.0 - abs(wine_body - food_richness)
+        )
+
+        # ======================================
+        # B. ACIDITY BALANCE
+        # 25 points
+        #
+        # Rich/salty food benefits from enough
+        # acidity, while acidic food needs a wine
+        # that can keep up.
+        # ======================================
+        target_acidity = clamp(
+            max(
+                food_acidity,
+                (0.65 * food_richness) +
+                (0.15 * food_saltiness)
+            )
+        )
+
+        acidity_score = clamp(
+            1.0 - abs(wine_acidity - target_acidity)
+        )
+
+        # ======================================
+        # C. SWEETNESS ↔ SPICE
+        # 25 points
+        #
+        # Spicier food calls for more sweetness.
+        # A wine that is too dry is penalized
+        # more than one that is slightly sweeter.
+        # ======================================
+        target_sweetness = clamp(
+            max(
+                0.55 * food_sweetness,
+                0.85 * food_spice
+            )
+        )
+
+        if wine_sweetness >= target_sweetness:
+            sweetness_score = clamp(
+                1.0 -
+                0.35 * (
+                    wine_sweetness -
+                    target_sweetness
+                )
+            )
+        else:
+            sweetness_score = clamp(
+                1.0 -
+                (
+                    target_sweetness -
+                    wine_sweetness
+                )
+            )
+
+        # ======================================
+        # D. TANNIN COMPATIBILITY
+        # 20 points
+        #
+        # Rich/salty foods can support tannin.
+        # Spice and high umami lower the ideal
+        # tannin level.
+        # ======================================
+        target_tannin = clamp(
+            (0.75 * food_richness) +
+            (0.20 * food_saltiness) -
+            (0.55 * food_spice) -
+            (0.20 * food_umami)
+        )
+
+        tannin_score = clamp(
+            1.0 - abs(
+                wine_tannin -
+                target_tannin
+            )
+        )
+
+        # ======================================
+        # TOTAL — 100 points
+        # ======================================
+        total_score = (
+            body_score * 30 +
+            acidity_score * 25 +
+            sweetness_score * 25 +
+            tannin_score * 20
+        )
+
+        components = {
+            'body_match': round(body_score * 100, 1),
+            'acidity_balance': round(acidity_score * 100, 1),
+            'sweetness_spice': round(sweetness_score * 100, 1),
+            'tannin_compatibility': round(tannin_score * 100, 1)
+        }
+
+        return total_score, components
+
+    # ==========================================
+    # 8. FIND BEST FOOD × WINE COMBINATION
+    # ==========================================
+    best_score = -1
+    best_food = None
+    best_wine = None
+    best_components = None
+
+    for _, food_row in food_pool.iterrows():
+
+        for _, wine_row in w_df.iterrows():
+
+            score, components = calculate_pairing_score(
+                food_row,
+                wine_row
+            )
+
+            if score > best_score:
+                best_score = score
+                best_food = food_row
+                best_wine = wine_row
+                best_components = components
+
+    if best_food is None or best_wine is None:
+        st.error(
+            "A valid food and wine pairing could not be generated."
+        )
+        st.stop()
+
+    # Save scoring information for the result page.
+    # We will use this in the next step.
+    st.session_state.pairing_score = round(best_score, 1)
+    st.session_state.pairing_components = best_components
+
+    return best_wine, best_food
 
 # ==========================================
 # 6. Page Rendering Functions
