@@ -1559,70 +1559,160 @@ def render_result():
     # Keep Streamlit's default chart theme from replacing the brand styling.
     st.plotly_chart(fig, use_container_width=True, theme=None)
 
+        # ==========================================
+    # 📝 PAIRING SCORE & RATIONALE
     # ==========================================
-    # 📝 RATIONALE TEXT & MATH ANALYSIS
-    # ==========================================
-    
-    # 1. Calculate mathematical similarity (Sum of absolute differences between the two graphs)
-    # Use zip() to find the absolute difference between wine and food scores on each axis, then sum them up
-    total_diff = sum(abs(w - f) for w, f in zip(wine_stats, food_stats))
-    
-    # Set a threshold (If the total difference across 5 axes is less than 5.5, it's congruent; otherwise, contrasting)
-    if total_diff < 5.5:
-        # When the shapes overlap significantly (Congruent Pairing)
-        chart_analysis = (
-            f"<strong style='color:{BRAND_COLORS['burgundy']};'>[Congruent Pairing]</strong> As seen by the closely overlapping shapes in the chart, "
-            "this pairing shares a similar flavor trajectory. The harmonious flavor profiles blend together to create a smooth, natural synergy on the palate."
-        )
-    else:
-        # When the shapes diverge (Contrasting Pairing)
-        chart_analysis = (
-            f"<strong style='color:{BRAND_COLORS['red']};'>[Contrasting Pairing]</strong> The diverging points in the chart represent a beautifully complementary balance. "
-            "Whether it's the wine's acidity cutting through the dish's richness, or filling in the flavor gaps, this pairing ensures strong elements complete each other rather than clash."
-        )
 
-    # 2. Existing wine/food description text
+    pairing_score = st.session_state.get('pairing_score')
+    pairing_components = st.session_state.get(
+        'pairing_components',
+        {}
+    )
+
+    body_match = pairing_components.get('body_match', 0)
+    acidity_balance = pairing_components.get('acidity_balance', 0)
+    sweetness_spice = pairing_components.get('sweetness_spice', 0)
+    tannin_compatibility = pairing_components.get(
+        'tannin_compatibility',
+        0
+    )
+
+    # ==========================================
+    # Existing wine description
+    # ==========================================
     wine_type = str(matched_wine.get('wine_type', 'wine'))
+
     if wine_type.isdigit() or wine_type == '3' or wine_type == 'nan':
         wine_type = 'wine'
 
     key_flavors = matched_wine.get('key flavors', '')
-    if pd.isna(key_flavors) or key_flavors == '':
-        flavor_str = "its beautifully balanced structure"
-    else:
-        flavor_str = f"its distinct notes of {str(key_flavors).lower()}"
 
-    pairing_notes = matched_wine.get('pairing_notes', '')
-    
-    if not pd.isna(pairing_notes) and pairing_notes != '':
-        if ',' in str(pairing_notes):
-            western_dishes = ", ".join([d.strip() for d in str(pairing_notes).split(',')[:3]])
-            base_rationale = (
-                f"While <b>{wine_name}</b> is traditionally celebrated alongside dishes like {western_dishes}, "
-                f"this {wine_type} reveals a spectacular new dimension when paired with Korean cuisine. "
-                f"The flavor profile, enriched by {flavor_str}, seamlessly bridges the gap to create a beautiful harmony with <b>{food_en}</b>."
-            )
-        else:
-            base_rationale = f"This pairing shines because this exceptional {wine_type} elevates the dining experience. Specifically, {pairing_notes}"
+    if pd.isna(key_flavors) or key_flavors == '':
+        flavor_str = "its balanced structure"
     else:
-        base_rationale = (
-            f"This pairing works beautifully because the unique character of <b>{wine_name}</b>, "
-            f"driven by {flavor_str}, harmonizes gracefully with the seasoned elements of <b>{food_en}</b>, "
-            f"creating a delightful balance on the palate."
+        flavor_str = (
+            f"its distinct notes of "
+            f"{str(key_flavors).lower()}"
         )
 
-    # 3. Combine chart analysis text with the base wine description
-    rationale_text = f"{chart_analysis}<br><br>{base_rationale}"
-    
+    pairing_notes = matched_wine.get('pairing_notes', '')
+
+    if not pd.isna(pairing_notes) and pairing_notes != '':
+        if ',' in str(pairing_notes):
+            western_dishes = ", ".join(
+                [
+                    dish.strip()
+                    for dish in str(pairing_notes).split(',')[:3]
+                ]
+            )
+
+            base_rationale = (
+                f"<b>{wine_name}</b> is traditionally paired with "
+                f"dishes such as {western_dishes}. "
+                f"Its profile, including {flavor_str}, also works well "
+                f"with <b>{food_en}</b>."
+            )
+
+        else:
+            base_rationale = (
+                f"<b>{wine_name}</b> brings {flavor_str} to this pairing. "
+                f"{pairing_notes}"
+            )
+
+    else:
+        base_rationale = (
+            f"<b>{wine_name}</b>, with {flavor_str}, "
+            f"creates a balanced match with <b>{food_en}</b>."
+        )
+
+    # ==========================================
+    # Score summary generated by the same model
+    # that selected the pairing
+    # ==========================================
+    if pairing_score is not None:
+
+        score_summary = f"""
+        <div style="
+            margin-bottom: 1.2rem;
+            padding-bottom: 1.1rem;
+            border-bottom: 1px solid {BRAND_COLORS['sable_beige']};
+        ">
+            <div style="
+                font-size: 0.75rem;
+                font-weight: 700;
+                letter-spacing: 0.08em;
+                color: {BRAND_COLORS['burgundy']};
+                margin-bottom: 4px;
+            ">
+                MODEL PAIRING SCORE
+            </div>
+
+            <div style="
+                font-size: 2rem;
+                font-weight: 800;
+                color: {BRAND_COLORS['mineshaft']};
+                margin-bottom: 12px;
+            ">
+                {pairing_score:.1f}
+                <span style="
+                    font-size: 0.9rem;
+                    font-weight: 400;
+                    color: {BRAND_COLORS['dove_gray']};
+                ">
+                    / 100
+                </span>
+            </div>
+
+            <div style="font-size: 0.85rem; line-height: 1.8;">
+                <b>Body &amp; Richness</b>: {body_match:.0f}/100<br>
+                <b>Acidity Balance</b>: {acidity_balance:.0f}/100<br>
+                <b>Sweetness &amp; Spice</b>: {sweetness_spice:.0f}/100<br>
+                <b>Tannin Compatibility</b>: {tannin_compatibility:.0f}/100
+            </div>
+        </div>
+        """
+
+    else:
+        score_summary = ""
+
+    rationale_text = f"""
+        {score_summary}
+
+        <div>
+            <b>Why this pairing works</b><br>
+            {base_rationale}
+        </div>
+    """
+
     st.session_state.rationale_text = rationale_text
 
-    st.markdown(f"""
-        <div style='background-color:var(--pa-light-gray); color:var(--pa-mineshaft); border: 1px solid var(--pa-sable-beige); border-radius:12px; padding:1.5rem; font-family:Montserrat, Arial, sans-serif; font-size:0.95rem; line-height:1.6;'>
-        {rationale_text}
-        <br><br>
-        <span style='color:var(--pa-dove-gray); font-size:0.85rem;'>Dish details: {matched_food.get('food_description_en', '')}</span>
+    st.markdown(
+        f"""
+        <div style="
+            background-color: var(--pa-light-gray);
+            color: var(--pa-mineshaft);
+            border: 1px solid var(--pa-sable-beige);
+            border-radius: 12px;
+            padding: 1.5rem;
+            font-family: Montserrat, Arial, sans-serif;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        ">
+            {rationale_text}
+
+            <br><br>
+
+            <span style="
+                color: var(--pa-dove-gray);
+                font-size: 0.85rem;
+            ">
+                Dish details:
+                {matched_food.get('food_description_en', '')}
+            </span>
         </div>
-    """, unsafe_allow_html=True)
+        """,
+        unsafe_allow_html=True
+    )
     
     # Equalized 1:1 Action Buttons
     st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
@@ -1640,6 +1730,12 @@ def render_result():
                 del st.session_state.matched_wine
             if 'matched_food' in st.session_state:
                 del st.session_state.matched_food
+            if 'pairing_score' in st.session_state:
+                del st.session_state.pairing_score
+            if 'pairing_components' in st.session_state:
+                del st.session_state.pairing_components
+            if 'rationale_text' in st.session_state:
+                del st.session_state.rationale_text
             move_to('intro')
 # ==========================================
 # 7. Router
