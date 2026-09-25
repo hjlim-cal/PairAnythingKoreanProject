@@ -625,6 +625,18 @@ def render_intro():
     
     # Primary CTA button to start the questionnaire
     if st.button("FIND MY MATCH", type="primary", use_container_width=True):
+        # Start every new quiz with a clean state
+        st.session_state.answers = {}
+
+        if 'matched_wine' in st.session_state:
+            del st.session_state.matched_wine
+
+        if 'matched_food' in st.session_state:
+            del st.session_state.matched_food
+
+        if 'rationale_text' in st.session_state:
+            del st.session_state.rationale_text
+
         move_to('q1')
 # Helper function to render a single-layer custom progress bar
 def render_custom_progress(percent):
