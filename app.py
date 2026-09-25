@@ -637,9 +637,9 @@ def get_matching_result(answers):
         seafood_terms = (
             r'seafood|fish|squid|octopus|nakji|crab|shrimp|prawn|'
             r'monkfish|mackerel|beltfish|anchovy|clam|oyster|mussel|'
-            r'eel|tuna|salmon|'
+            r'eel|tuna|salmon|sea snail'
             r'낙지|오징어|문어|새우|게|생선|아귀|고등어|갈치|멸치|'
-            r'조개|굴|홍합|장어|참치|연어'
+            r'조개|굴|홍합|장어|참치|연어|골뱅이'
         )
 
         if diet_choice == 'A':  # Vegetarian / plant-based
