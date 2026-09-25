@@ -47,17 +47,63 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. Data Loading (Cached for performance)
+# 2. Data Loading 
 # ==========================================
-@st.cache_data
 def load_data():
-    try:
-        wine_df = pd.read_csv('DDI_wine_updated_FINAL.csv')
-        food_df = pd.read_csv('korean_food_clusters_with_descriptions.csv')
-    except FileNotFoundError:
-        wine_df = pd.DataFrame({'Wine': ['Swiss Pinot Noir', 'Chasselas', 'Merlot'], 'light/bold (body)': ['Light', 'Light', 'Bold'], 'dry/sweetness': ['Dry', 'Dry', 'Dry']})
-        food_df = pd.DataFrame({'food_name': ['Jeyuk-bokkeum', 'Pajeon', 'Galbijjim'], 'Spiciness_Heat': ['4', '1', '3'], 'food_description_en': ['Spicy pork', 'Pancake', 'Beef stew']})
+    wine_path = APP_DIR / 'DDI_wine_updated_FINAL.csv'
+    food_path = APP_DIR / 'korean_food_clusters_with_descriptions.csv'
+
+    # Make missing files visible instead of silently using fake fallback data
+    if not wine_path.is_file():
+        st.error(f"Wine data file not found: {wine_path.name}")
+        st.stop()
+
+    if not food_path.is_file():
+        st.error(f"Food data file not found: {food_path.name}")
+        st.stop()
+
+    wine_df = pd.read_csv(wine_path)
+    food_df = pd.read_csv(food_path)
+
+    # Validate required columns
+    required_food_cols = {
+        'food_name',
+        'food_name_en',
+        'Spiciness_Heat',
+        'is_vegetarian',
+        'is_pescatarian',
+        'vibe_solo',
+        'vibe_friends',
+        'vibe_family'
+    }
+
+    required_wine_cols = {
+        'Wine',
+        'dry/sweetness',
+        'light/bold (body)',
+        'tannins',
+        'acidity'
+    }
+
+    missing_food = required_food_cols - set(food_df.columns)
+    missing_wine = required_wine_cols - set(wine_df.columns)
+
+    if missing_food:
+        st.error(
+            f"Food CSV is missing required columns: "
+            f"{', '.join(sorted(missing_food))}"
+        )
+        st.stop()
+
+    if missing_wine:
+        st.error(
+            f"Wine CSV is missing required columns: "
+            f"{', '.join(sorted(missing_wine))}"
+        )
+        st.stop()
+
     return wine_df, food_df
+
 
 wine_data, food_data = load_data()
 
@@ -664,6 +710,13 @@ def get_matching_result(answers):
     else:
         # No dietary restriction
         food_pool = f_df.copy()
+
+    if food_pool.empty:
+        st.error(
+            "No dishes matched the selected dietary preference. "
+            "Please check the dietary columns in the food CSV."
+        )
+        st.stop()
 
     # ==========================================
     # 2. SPICE TOLERANCE
