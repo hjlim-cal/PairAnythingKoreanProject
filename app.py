@@ -1464,7 +1464,7 @@ def render_result():
     # 📊 RADAR CHART VISUALIZATION
     # ==========================================
     st.markdown("<div style='height: 30px;'></div>", unsafe_allow_html=True)
-    st.markdown("<h3 style='color: var(--pa-mineshaft); text-align: center; font-family: Montserrat, Arial, sans-serif; font-size: 1.5rem; font-weight: 700; margin-bottom: 5px;'>Flavor Profile Match</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: var(--pa-mineshaft); text-align: center; font-family: Montserrat, Arial, sans-serif; font-size: 1.5rem; font-weight: 700; margin-bottom: 5px;'>Flavor Profiles</h3>", unsafe_allow_html=True)
     
     # Helper function to handle numeric scaling safely (0~5 scale)
     def safe_scale(val, default=1.0):
@@ -1624,7 +1624,7 @@ def render_result():
             f'border-bottom:1px solid {BRAND_COLORS["sable_beige"]};">'
             f'<div style="font-size:0.75rem; font-weight:700; '
             f'letter-spacing:0.08em; color:{BRAND_COLORS["burgundy"]}; '
-            f'margin-bottom:4px;">MODEL PAIRING SCORE</div>'
+            f'margin-bottom:4px;">PAIRING SCORE</div>'
             f'<div style="font-size:2rem; font-weight:800; '
             f'color:{BRAND_COLORS["mineshaft"]}; margin-bottom:12px;">'
             f'{pairing_score:.1f}'
