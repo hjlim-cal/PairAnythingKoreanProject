@@ -733,13 +733,13 @@ def get_matching_result(answers):
         # Medium
         spice_pool = food_pool[
             (food_pool['Spiciness_Heat'] > 1.5) &
-            (food_pool['Spiciness_Heat'] < 2.4)
+            (food_pool['Spiciness_Heat'] < 2.25)
         ]
 
     else:
         # Hot / authentic K-spice
         spice_pool = food_pool[
-            food_pool['Spiciness_Heat'] >= 2.4
+            food_pool['Spiciness_Heat'] >= 2.25
         ]
 
     # Diet must remain intact.
